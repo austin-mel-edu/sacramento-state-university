@@ -1,0 +1,17 @@
+Script started on Mon 02 Oct 2023 01:07:51 PM PDT
+]0;austinmelendez@ecs-pa-coding2:~/csc60/lab2[?1034h[austinmelendez@ecs-pa-coding2 lab2]$ gcc.[K lab[K[K[KLavb[K[Kb2.ou[K[Kc
+]0;austinmelendez@ecs-pa-coding2:~/csc60/lab2[austinmelendez@ecs-pa-coding2 lab2]$ gcc Lab2.c[6Pexit[2Plsmv Lab1 lab12 lab23 lab3[4Pcd csc60ls[Kcd ~Lab2ls[Kcd Lab3ls[Kmv ../AustinMelendez_lab3.txt ./Lab3cd csc60[Kmv ../AustinMelendez_lab3.txt ./Lab3ls[Kcd Lab3ls[Kcd Lab2~[K[2Plscd csc60mv Lab3 lab32 lab21 lab1ls[Kexitgcc Lab2.c[Kgcc Lab2.c[6Pexitgcc Lab2.c[K./a.out
+
+Lab 2. 
+
+Hello World.
+Hi, Austin Melendez. 
+
+People change and things go wrong, 
+but just remember, life goes on. 
+- Mac Miller 
+
+]0;austinmelendez@ecs-pa-coding2:~/csc60/lab2[austinmelendez@ecs-pa-coding2 lab2]$ exit
+exit
+
+Script done on Mon 02 Oct 2023 01:08:26 PM PDT
