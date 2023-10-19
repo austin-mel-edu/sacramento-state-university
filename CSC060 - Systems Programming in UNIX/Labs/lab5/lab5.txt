@@ -1,0 +1,15 @@
+
+Austin Melendez.  Lab 5. 
+
+Area of Inscribed Polygons 
+
+ Sides    Radius      Area   
+-------  --------   -------- 
+  4.00     14.80    438.080
+
+  5.00      7.50    133.742
+
+  7.00     12.60    434.432
+
+  8.00      4.70     62.480
+

@@ -1,0 +1,23 @@
+Script started on Tue 17 Oct 2023 11:59:42 AM PDT
+]0;austinmelendez@ecs-pa-coding2:~/csc60/lab5[?1034h[austinmelendez@ecs-pa-coding2 lab5]$ gcc lab5.c -lm
+]0;austinmelendez@ecs-pa-coding2:~/csc60/lab5[austinmelendez@ecs-pa-coding2 lab5]$ gcc lab5.c -lmexit[Kalpine[4Plsscript AustinMelendez_Lab2.txt./a.out[Kgcc Lab2.c[3P./a.out
+]0;austinmelendez@ecs-pa-coding2:~/csc60/lab5[austinmelendez@ecs-pa-coding2 lab5]$ cat lab5.txt
+
+Austin Melendez.  Lab 5. 
+
+Area of Inscribed Polygons 
+
+ Sides    Radius      Area   
+-------  --------   -------- 
+  4.00     14.80    438.080
+
+  5.00      7.50    133.742
+
+  7.00     12.60    434.432
+
+  8.00      4.70     62.480
+
+]0;austinmelendez@ecs-pa-coding2:~/csc60/lab5[austinmelendez@ecs-pa-coding2 lab5]$ exit
+exit
+
+Script done on Tue 17 Oct 2023 12:00:02 PM PDT
