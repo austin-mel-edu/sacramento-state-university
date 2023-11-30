@@ -1,0 +1,16 @@
+lab10
+lab10.c
+lab10.o
+lab10.txt
+lab9_10.h
+lsout
+makefile
+ParseCmd.c
+ParseCmd.o
+ProcessExtCmd.c
+ProcessExtCmd.o
+Redirection.c
+Redirection.o
+RunExtCmd.c
+RunExtCmd.o
+wcout
