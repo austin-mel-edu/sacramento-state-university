@@ -1,0 +1,31 @@
+---
+title: "hw0"
+author: "Austin Melendez"
+format:
+  html:
+    embed-resources: true
+editor: visual
+---
+
+## Homework 0
+
+```{r}
+df <- read.csv("//sacfiles1/home/a/austinmelendez/Downloads/stat-scores.csv")
+
+percent <- colMeans(df)
+percent <- percent * 20
+print(percent)
+
+standardNum <- seq(1, ncol(df))
+print(standardNum)
+```
+
+1\)
+
+```{r}
+plot(standardNum, percent, xlab = "standard", ylab = "percent", main="Scores for Intro Stats", xlim=c(5,20), ylim=c(20,100))
+```
+
+2\)
+
+The plot shows that the overall scores of the standards decreased over time. Students in the class scored lower and the standards later in the class than they did on the standards earlier in the class. There are a few extreme points such as standard 16, where the average score was significantly lower than the trend at only 22%. Similarly, standard 7, the class averages score was significantly lower than the trend dropping from 85% in standard 6 to a 60% in standard 7.
