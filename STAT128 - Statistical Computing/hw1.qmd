@@ -1,0 +1,135 @@
+---
+title: "Stat 128 - HW 1"
+author: "Austin Melendez"
+format:
+  html:
+    embed-resources: true
+editor: visual
+---
+
+## 1 penguins
+
+```{r, warning=FALSE, message=FALSE}
+# You'll need to install these packages first before you can use them.
+
+#install.packages("palmerpenguins")
+#install.packages("tidyverse")
+library(palmerpenguins)
+library(tidyverse)
+```
+
+1.  How many rows are in `penguins`? How many columns?
+
+```{r}
+# Rows
+nrow(penguins)
+# Columns
+ncol(penguins)
+```
+
+There are 344 rows in penguins and 8 columns.
+
+2.  What does the `bill_depth_mm` variable in the `penguins` data frame describe? Read the help for [`?penguins`](https://allisonhorst.github.io/palmerpenguins/reference/penguins.html) to find out.
+
+The bill_depth_mm variable in the penguins data frame is a number denoting the bill depth in millimeters of each penguin.
+
+3.  Make a scatterplot of `bill_depth_mm` vs. `bill_length_mm`. That is, make a scatterplot with `bill_depth_mm` on the y-axis and `bill_length_mm` on the x-axis. Describe the relationship between these two variables.
+
+```{r}
+ggplot(
+  data = penguins,
+  mapping = aes(y = bill_depth_mm, x = bill_length_mm)
+) +
+  geom_point()
+```
+
+There are two larger clusters of points. One with large bills and small bill depth and the other with small bills and larger bill depth. Along with some additional outliers
+
+4.  What happens if you make a scatterplot of `species` vs. `bill_depth_mm`? What might be a better choice of geom?
+
+```{r}
+ggplot(
+  data = penguins,
+  mapping = aes(y = bill_depth_mm, x = species)
+) +
+  geom_point()
+```
+
+It would be better to encode the species as a color on the original graph, so you are comparing two variables and not loosing the additional dimension of what species the animal is. Something like:
+
+```{r}
+ggplot(
+  data = penguins,
+  mapping = aes(y = bill_depth_mm, x = bill_length_mm)
+) +
+  geom_point(mapping = aes(color = species))
+```
+
+5.  Write the code to create the graph on Canvas. What does it show?
+
+```{r}
+ggplot(
+  data = penguins, mapping = aes(x = island, y = body_mass_g)) + geom_boxplot() + 
+    labs(
+    x = "island", y = "body mass (g)"
+  )
+```
+
+This graph with all three dimensions shown show that each species has a distinct cluster of points which correlates to similar bill lengths and similar bill depths when compared only to their own species. There are still a few outliers on the extreme lengths and depths for the species Adelie and Gentoo.
+
+## 2 diamonds
+
+1.  Make a histogram of the carat variable in the diamonds dataset that is available when you load the tidyverse package. Experiment with different binwidths. What binwidth reveals the most interesting patterns? Describe the patterns you see.
+
+```{r}
+ggplot(
+  data = diamonds,
+  mapping = aes(x = carat)
+) +
+  geom_histogram(binwidth = 0.05)
+```
+
+Since the values of carat are only in the range of 0 to around 2.6 any binwidth value below a whole number makes the graph completely uninterpretable because it is just a single solid bar containing all the entries. I found that a binwidth of between 0.01 and 0.1 displayed the most detail. I would chose the value 0.05 because it displayed the peaks and dips clearly in the count of each caret type, showing which stones are rarer, without getting overly complicated like the above graph.
+
+2.  Write the code to create the graph on Canvas. What does it show?
+
+```{r}
+ggplot(
+  data = diamonds,
+  mapping = aes(y = price, x = carat)
+) +
+  geom_point(mapping = aes(color = cut))
+```
+
+The graph shows the the most common carat diamond is a 0.25 caret stone and 1 carat stones. The rarest stones include exactly 0.85, 1.45 or any stone bigger than 2.5 carats. The trend of the graph can best be described as a negative exponential curve or a sharp downward trend.
+
+## 3 mpg
+
+1.  The `mpg` data frame that is bundled with the ggplot2 package contains 234 observations collected by the US Environmental Protection Agency on 38 car models. Which variables in `mpg` are categorical? Which variables are numerical? (Hint: Type [`?mpg`](https://ggplot2.tidyverse.org/reference/mpg.html) to read the documentation for the dataset.) How can you see this information when you run `mpg`?
+
+There are 7 categorical variables in the mpg dataset and 4 numerical variables. You can see this information when you run mpg by looking at the type of data. Strings or \<chr\> variables are likely categorical and double \<dbl\> or integer \<int\> variables are likely numerical. However, variables like year are stored as \<int\> but are really categorical.
+
+2.  Make a scatterplot of `hwy` vs. `displ` using the `mpg` data frame. Next, map a third, numerical variable to `color`, then `size`, then both `color` and `size`, then `shape`. How do these aesthetics behave differently for categorical vs. numerical variables?
+
+```{r}
+ggplot(
+  data = mpg,
+  mapping = aes(y = hwy, x = displ)
+) +
+  geom_point(mapping = aes(color = cty, size = cty))
+```
+
+I was unable to use a different numerical variable while using the shape variable because they are continuous variables. Without the shape variable these continuous variables are able to be encoded on a scale to convey the additional dimension.
+
+3.  In the scatterplot of `hwy` vs. `displ`, what happens if you map a third variable to `linewidth`?
+
+```{r}
+ggplot(
+  data = mpg,
+  mapping = aes(y = hwy, x = displ, linewidth = cty)
+) +
+  geom_point()
+
+```
+
+I honestly don't see a difference with this graph, when I chose different variables it advised in the console against using a discrete variable for linewidth, but even when I use a continuous variable I do not see a change in the graph.
