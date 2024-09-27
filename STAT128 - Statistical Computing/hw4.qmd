@@ -1,0 +1,220 @@
+---
+title: "hw4 stat128"
+author: "TODO"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+```{r, message=FALSE}
+library(tidyverse)
+```
+
+## 1 Warm Up
+
+#### 1. How many rows and columns are in the river temperature data?
+
+```{r}
+#df <- read_tsv("//sacfiles1/home/a/austinmelendez/Documents/water-temp.txt", #comment = "#") |>
+#  rename(
+#    "temperature" = "15722_00010",
+#    "qual" = "15722_00010_cd"
+#  )
+
+df <- read_tsv("/Users/austi/Desktop/Everything/School/STAT128/water-temp.txt", comment = "#") |>
+  rename(
+    "temperature" = "15722_00010",
+    "qual" = "15722_00010_cd"
+  )
+
+df <- df[-1,]
+spec(df)
+```
+
+There are 137,728 rows and 6 columns in the dataset.
+
+#### 2. What does an observation represent?
+
+```{r}
+#Dataset documentation
+#https://waterdata.usgs.gov/nwis/?tab_delimited_format_info
+
+df
+```
+
+An observations represents the water temperature recorded at a specific site number and sensor number. Additionally the dataset contains the agencys responsible for collecting data and maintaining the site, the date, time, and timezone from where the observation was recorded, and lastly it contains a data-value quaification code that pertains to the preceeding column.
+
+```         
+# Data-value qualification codes included in this output:     #     A  Approved for publication -- Processing and review completed.      
+#     P  Provisional data subject to revision.      
+#     e  Value has been estimated.  
+```
+
+#### 3. Clean up the data.
+
+Create a data frame called `water` containing three columns:
+
+1.  `datetime` that represents a moment in time
+2.  `temperature` that represents the water temperature in degrees Fahrenheit (not Celsius)
+3.  `qual` referring to the data qualification status from the USGS, as described in their [Tab-delimited output-format description](https://waterdata.usgs.gov/nwis/?tab_delimited_format_info):
+
+```         
+   # Data-value qualification codes included in this output: 
+   #     A  Approved for publication -- Processing and review completed.  
+   #     P  Provisional data subject to revision.  
+   #     e  Value has been estimated.  
+```
+
+*Hint: the row starting with `5s` is a problem.*
+
+```{r}
+water <- df |>
+  subset(select = c(datetime, temperature, qual))
+
+water
+
+```
+
+#### 4. What time span does the data cover? Is it complete?
+
+Explain how you determined if the data is complete or not.
+
+```{r}
+library(lubridate)
+date <- water[,1]
+
+date <- as.Date(ymd_hm(date$datetime))
+
+data.frame(date) |>
+    mutate(
+    date = date
+  ) |>
+  group_by(date) |>
+  summarize(n()) |>
+  head()
+
+data.frame(date) |>
+    mutate(
+    date = date
+  ) |>
+  group_by(date) |>
+  summarize(n()) |>
+  tail()
+
+```
+
+The data covers from 09/23/2020 to 09/23/2024. For some reason by grouping by the week isn't working, but as far I as I can tell the data is complete. When I am flipping through the data there are no missing days, however this would be much easier to completely confirm in my grouping was working.
+
+## 2 Plots
+
+Answer each of the following questions with a plot and a brief explanation.
+
+#### 1. Plot a time series of the most recent day in the data.
+
+Is water temperature a discrete or continuous quantitative variable? Does the graph appear to show a discrete or continuous quantitative variable? Write a paragraph explaining what you see, and why.
+
+```{r}
+#tail(water)
+
+
+water |>
+  filter(grepl("2024-09-23 .*", datetime)) |>
+  ggplot(aes(x = datetime, y = temperature)) +
+  geom_point()
+  
+```
+
+The water temperature is a discrete quantitative variable, because of the accuracy of the measurement tools and the regular interval we chose to record the data on. The actual temperature gradient of the river would be continuous, but because of the previously stated facts our data set contains discrete recordings.
+
+#### 2. Plot a time series of the most recent week in data.
+
+Comment on the graph. Does there appear to be a recurring daily pattern?
+
+```{r}
+water |>
+  filter(grepl("2024-09-.* .*", datetime)) |>
+  filter(grepl("2024-09-17|2024-09-18|2024-09-19|2024-09-20|2024-09-21|2024-09-22|2024-09-23", datetime)) |>
+  ggplot(aes(x = datetime, y = temperature)) +
+  geom_point()
+```
+
+Yes, there seems to be on overall reoccurring daily pattern, however it also seems to get warmer on average towards the end of this week.
+
+#### 3. Plot the mean temperature each day for the entire data set.
+
+Add two annotations using `annotate` for the warmest and coldest days.
+
+```{r}
+water[,-3] |>
+  mutate(
+    datetime = gsub(datetime, pattern=" [0-9]{2}:[0-9]{2}", replacement="")
+  ) |>
+  group_by(datetime) |>
+  summarize(
+    n(),
+    avg_temp = mean(as.numeric(temperature))
+  ) |>
+    ggplot(aes(x = datetime, y = avg_temp)) +
+    geom_point()
+```
+
+My summarize function is not working as anticipated and I'm not sure why, its not finding the variable temperature?
+
+#### 4. Is the water warmer or colder this past year versus previous years?
+
+Make sure you're comparing fairly. If the data goes until only September of this year, then account for this in your calculation.
+
+```{r}
+water[,-3] |>
+  mutate(
+    datetime = gsub(datetime, pattern=" [0-9]{2}:[0-9]{2}", replacement="")
+  ) |>
+  filter(month(datetime) <= 9) |>
+  group_by(year(datetime)) |>
+  summarize(
+    n(),
+    avg_temp = mean(as.numeric(temperature))
+  )
+```
+
+Same error as above.
+
+#### 5. During which months is the American River dangerously cold (less than 60 degrees Fahrenheit)?
+
+```{r}
+water |>
+  mutate(
+    datetime = gsub(datetime, pattern=" [0-9]{2}:[0-9]{2}", replacement=""),
+    fahrenheit = as.numeric(temperature) * (9/5) + 32
+  ) |>
+  filter(fahrenheit <= 60) |>
+    ggplot(aes(x = month(datetime), y = fahrenheit)) +
+    geom_point() +
+    scale_x_continuous(limits=c(1,12))
+```
+
+Not a very good visualization, but I just wanted to see which months had points since I filtered the data to be any temperature values below 60 Fahrenheit. Apparently the river dips below 60 degrees 11/12 months of the year, the only year there aren't recorded temperatures below 60 are in September (9).
+
+#### 6. Come up with your own question and plot for this data.
+
+On the graph above March looks to be the coldest month for water temperature.
+
+**How does the temperature fluctuations vary between the different years for the month of March?**
+
+```{r}
+water |>
+  mutate(
+    datetime = gsub(datetime, pattern=" [0-9]{2}:[0-9]{2}", replacement=""),
+    fahrenheit = as.numeric(temperature) * (9/5) + 32
+  ) |>
+  filter(month(datetime) == 3) |>
+  group_by(year(datetime)) |>
+  ggplot(aes(x = day(datetime), y = fahrenheit, color = year(datetime))) +
+  geom_point()
+  
+```
+
+Although the visual encoding on this graph could be done in a much clearer way, this graph does show the different in temperatures between the different years for the month of March.
+
+The average water temperature during the month of March was higher during 2021 and 2022. The average water temperature during the month of March was the lowest (coldest) during the year 2023 with an average temperature of around 47.5 degrees. The temperature for the year 2024 starts slightly cooler than 2022 and 2021, then rises to be even with those years, but seems to taper off to be cooler for the end of the month. After the 20th the average water temperature was cooler than anything recorded in 2022 and 2021.
