@@ -1,0 +1,151 @@
+---
+title: "hw6 Stat 128"
+author: "Austin Melendez"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+```{r, message=FALSE}
+library(tidyverse)
+
+
+read_water_sensor <- function(fname){
+  water_raw <- read_tsv(fname, comment = "#")
+  
+  water <- water_raw |>
+    slice(-1) |>
+    select(3, 5, 6) 
+  
+  colnames(water) <- c("datetime", "temp_cel", "qual")
+  
+  water <- water |>
+    mutate(datetime = ymd_hm(datetime),
+           temp_far = as.double(temp_cel)*(9/5) + 32) |>
+    mutate(hour = hour(datetime) + minute(datetime) / 60)
+  return(water)
+}
+```
+
+#### 1. Does there appear to be a seasonal trend component to water temperature?
+
+Read in the file provided in Canvas using the function above. Plot the data and write a brief paragraph explaining the plot. Comment on the seasonal component, the long term changes in average water temperature. Is it as expected?
+
+```{r}
+#water <- read_water_sensor("//sacfiles1/home/a/austinmelendez/Documents/oct7.txt")
+water <- read_water_sensor("C:/Users/austi/Desktop/Everything/School/Stat128/oct7.txt")
+
+water |>
+  ggplot(aes(x = datetime, y = temp_far)) +
+  geom_point(size = 0.75)
+
+```
+
+The plot shows that there is variation between different weeks/days over the time period of the given dataset. For example, the water is warmer on average from the week of Sept 16th to the 23rd. However, the following period from the 27th to around Oct 3rd the water temperature is much cooler on average.
+
+#### 2. Propose and fit your own model for the temperature data.
+
+Write down and describe the mathematical formulation of the model using $\LaTeX$, along with the fitted parameters. Note that R can treat the `datetime` as a number, so an easy way to create a new model is to just add a linear term for `datetime` to one of the existing models, so the formula will look something like `lm(temp_far ~ datetime + …other terms…)`.
+
+Of course, I encourage you to be as creative as you like in coming up with more sophisticated models!
+
+mathematical formulation:
+
+$$
+temperature = sin(hour \cdot 2 \cdot \pi \div 24) + cos(hour \cdot 2 \cdot \pi \div 24) + day
+$$
+
+```{r}
+formula <- lm(temp_far ~ sin(hour*2*pi/24) + cos(hour*2*pi/24) + as.factor(day(datetime)), data = water)
+
+mod1 <- lm(temp_far ~ as.factor(day(datetime)) + as.factor(hour), data = water)
+
+mod2 <- lm(temp_far ~ poly(hour, 3) + as.factor(day(datetime)), data = water)
+
+water_est <- water
+water_est$temp_far <- predict(formula, water)
+
+mod1_est <- water
+mod1_est$temp_far <- predict(mod1, water)
+
+mod2_est <- water
+mod2_est$temp_far <- predict(mod2, water)
+
+water$status <- "actual"
+
+water_est$status <- "categorical sinusodial"
+mod1_est$status <- "nonparametric"
+mod2_est$status <- "linear sinusodial"
+
+water_comb <- rbind(water, water_est)
+mod1_comb <- rbind(water, mod1_est)
+mod2_comb <- rbind(water, mod2_est)
+
+all_data <- rbind(water, water_est)
+all_data <- rbind(all_data, mod1_est)
+all_data <- rbind(all_data, mod2_est)
+```
+
+#### 3. Plot a comparison of the models.
+
+Plot the actual data and the predicted values for the proposed model above along with two other models for a 2 day period, recreating a similar plot as in the Canvas discussion.
+
+I chose two days that have a more extreme change in average temperature over the two days, so the model would have to take into account variations and not be a static repeating estimation.
+
+```{r}
+two_days <- filter(water_comb, grepl("2024-09-24 .*", datetime) | grepl("2024-09-25 .*", datetime))
+
+two_days2 <- filter(mod1_comb, grepl("2024-09-24 .*", datetime) | grepl("2024-09-25 .*", datetime))
+
+two_days3 <- filter(mod2_comb, grepl("2024-09-24 .*", datetime) | grepl("2024-09-25 .*", datetime))
+
+all_data <- filter(all_data, grepl("2024-09-24 .*", datetime) | grepl("2024-09-25 .*", datetime))
+
+ggplot(data = two_days, aes(x = datetime, y = temp_far, color = status)) +
+  geom_line() +
+  ggtitle("Categorical Sinusodial Model")
+
+ggplot(data = two_days2, aes(x = datetime, y = temp_far, color = status)) +
+  geom_line() +
+  ggtitle("Nonparametric Model")
+
+ggplot(data = two_days3, aes(x = datetime, y = temp_far, color = status)) +
+  geom_line() +
+  ggtitle("Cubic Model")
+
+ggplot(data = all_data, aes(x = datetime, y = temp_far, color = status)) +
+  geom_line() +
+  ggtitle("All Models")
+
+
+
+
+
+```
+
+#### 4. Choose the best model.
+
+Calculate the Mean Squared Error (MSE), which is the average squared difference between the predicted values and the data for each of the above models. In the equation below $y_i$ is the actual recorded temperature value, and $\hat{y}_i$ is the predicted.
+
+$$
+MSE = \frac{1}{n} \sum_{i=1}^n (y_i - \hat{y}_i)^2
+$$
+
+Use the MSE together with the plot above to select the best model. Use any other statistics or plots you like. Justify your selection in a paragraph.
+
+```{r}
+N <- nrow(two_days)
+
+MSE1 <- mean((water$temp_far - water_est$temp_far)^2)
+
+MSE2 <- mean((water$temp_far - mod1_est$temp_far)^2)
+
+MSE3 <- mean((water$temp_far - mod2_est$temp_far)^2)
+
+print(MSE1)
+print(MSE2)
+print(MSE3)
+```
+
+The nonparametric model is the best model out of the three models I tested. The estimated values are the closest to the actual values. This model also has the lowest MSE score at 0.1632867.

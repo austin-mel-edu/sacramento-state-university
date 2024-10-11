@@ -1,0 +1,142 @@
+---
+title: "hw5"
+author: "Austin Melendez"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+```{r, message=FALSE}
+library(tidyverse)
+```
+
+#### 1. Which data points are missing?
+
+Hint: The data is missing in more than 1 place.
+
+```{r}
+#sep2023 <- readRDS("//sacfiles1/home/a/austinmelendez/Documents/sep2023.rds")
+sep2023 <- readRDS("/Users/austi/Desktop/Everything/School/Stat128/sep2023.rds")
+
+df <- sep2023[,1] |>
+  mutate(
+    date = time,
+    time = minute(time)
+  )
+
+count <- 0
+
+for(i in 1:(nrow(df)-1)){
+ row <- df[i,]
+ row2 <- df[i+1,]
+ 
+ if(row[1] == 0){
+   if(row2[1] != 15){
+     print(row)
+     print(row2)
+     count <- count + 1
+   }
+ }
+ else if(row2[1] == 0){
+   if(row[1] != 45){
+     print(row)
+     print(row2)
+     count <- count + 1
+   }
+ }
+
+  else if((row2[1] - row[1]) != 15){
+   print(row)
+   print(row2)
+   count <- count + 1
+ }
+ 
+ #print(count)
+}
+```
+
+There are two data points missing between:\
+
+|                                             |
+|--------------------------------------------:|
+| 2023-09-19 18:15:00 and 2023-09-20 19:45:00 |
+
+|                                             |
+|--------------------------------------------:|
+| 2023-09-19 17:15:00 and 2023-09-19 17:45:00 |
+
+#### 2. Estimate the missing data, and provide a complete mathematical description of the fitted model you used.
+
+```{r}
+sep2023[467,]
+sep2023[468,]
+sep2023[470,]
+sep2023[471,]
+
+sep2023$estimate <- c(FALSE)
+
+for(x in nrow(sep2023)){
+  #value <- 17 * x + sin(4.5)
+  
+  #sep2023$est_value <- value
+}
+
+sep2023
+
+# Insert rows for missing data, set estimate = TRUE for estimated values
+
+
+```
+
+$$
+y = ax + \sin(b)
+$$
+
+where
+
+-   $y$ represents the temperature in degrees Fahrenheit
+
+-   $x$ represents the number of observations
+
+The fitted parameters are $a = 17$, $b = 4.5$, etc.
+
+#### 3. Plot the data, the estimates, and the fitted model.
+
+Make it visually clear in the plot which are actual data points and which are estimates.
+
+```{r}
+sep2023 |>
+    ggplot(aes(x = time, y = temperature, color = estimate)) +
+    geom_point()
+```
+
+Explain your plot.
+
+#### 4. How well did the estimates work?
+
+Download the [complete data](https://waterdata.usgs.gov/monitoring-location/11446980/#parameterCode=00010&period=P7D&showMedian=true) from USGS or from the previous homework, and compare the estimates with the actual data points.
+
+```{r}
+# Load complete dataset
+df <- read_tsv("/Users/austi/Desktop/Everything/School/STAT128/water-temp.txt", comment = "#") |>
+  rename(
+    "temperature" = "15722_00010",
+    "qual" = "15722_00010_cd"
+  )
+
+df <- df[-1,]
+spec(df)
+
+water <- df |>
+  subset(select = c(datetime, temperature, qual)) |>
+  mutate(
+    ftemp = as.numeric(temperature) * 9/5 + 32
+  )
+
+#water
+
+
+setdiff(water, sep2023)
+
+```
