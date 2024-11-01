@@ -1,0 +1,230 @@
+---
+title: "hw8"
+author: "Austin Melendez"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+## HW8
+
+**1) Create a matrix that represents which "people" are infected and not infected. Use sample to randomly assign those that will start infected using the starting proportion defined in the function.**
+
+```{r}
+# Set random seed
+set.seed(94128)
+
+init_matrix <- function(row,col,start_prop=0.1){
+  inf_matrix <- matrix(sample(c(0,1), row*col, replace = TRUE, prob=c(1-start_prop,start_prop)), nrow=row, ncol=col)
+  #print(inf_matrix)
+}
+
+init_matrix(5,5)
+
+init_matrix(5,5,0.5)
+```
+
+**2) Function to create visual display of those infected.**
+
+```{r}
+dis_plot <- function(row,col,input){
+  par(pty="s", mar=c(1,1,1,1), yaxt="n", xaxt="n",ann=FALSE)
+  image(1:col,1:row,input, col =c("white", "red"))
+}
+
+inf_matrix <- apply(init_matrix(15,15), 2, rev)
+
+dis_plot(nrow(inf_matrix),ncol(inf_matrix),t(inf_matrix))
+```
+
+**3) Function to infect cells above/below**
+
+```{r}
+dis_sim <- function (input){
+  x <- input
+  
+  cc_RL <- init_matrix(5,5-1,0.5)
+  cc_TB <- init_matrix(5-1,5,0.5)
+  
+  #ABOVE
+  new_inf_above <- ((x[-1, ] == 1) & cc_TB)
+      
+  xnew <- x
+  xnew[-5, ][new_inf_above] <- 1
+  
+  #BELOW
+  new_inf_below <- ((x[-5, ] == 1) & cc_TB)
+      
+  xnew[-1, ][new_inf_below] <- 1
+  
+  #RIGHT
+  new_inf_right <- ((x[ ,-5] == 1) & cc_RL)
+
+  xnew[, -1][new_inf_right] <- 1
+      
+  #LEFT
+  new_inf_left <- ((x[ ,-1] == 1) & cc_RL)
+
+  xnew[, -5][new_inf_left] <- 1
+  
+  xnew[x == 1] <- 2
+  xnew
+
+}
+
+dis_sim(init_matrix(5,5,0.25))
+```
+
+```{r}
+dis_sim <- function (input){
+  x <- input
+  
+  #cc_RL <- init_matrix(5,5-1,0.5)
+  cc_TB <- init_matrix(5-1,5,0.5)
+  
+  for(i in 1:2){
+    #ABOVE
+    if(i == 1){
+      new_inf_above <- ((x[-1, ] == 1) & cc_TB)
+      
+      xnew <- x
+      xnew[-5, ][new_inf_above] <- 1
+    }
+    #BELOW
+    else if(i == 2){
+      new_inf_below <- ((x[-5, ] == 1) & cc_TB)
+      
+      xnew <- x
+      xnew[-1, ][new_inf_below] <- 1
+    }
+  }
+  
+  xnew[x == 1] <- 2
+  xnew
+
+}
+
+dis_sim(init_matrix(5,5,0.25))
+```
+
+```{r}
+dis_sim <- function (input, time_length){
+  x <- init_matrix(5,5,0.25)
+  
+  cc_RL <- init_matrix(5,5-1,0.5)
+  #cc_TB <- init_matrix(5-1,5,0.5)
+  
+  for(i in 1:2){
+    #RIGHT
+    if(i == 1){
+      new_inf_right <- ((x[ ,-5] == 1) & cc_RL)
+      
+      xnew <- x
+      xnew[, -1][new_inf_right] <- 1
+    }
+    #LEFT
+    else if(i == 2){
+      new_inf_left <- ((x[ ,-1] == 1) & cc_RL)
+      
+      xnew <- x
+      xnew[, -5][new_inf_left] <- 1
+    }
+  }
+  
+  xnew[x == 1] <- 2
+  xnew
+
+}
+dis_sim()
+```
+
+**4) Function to infect cells in all 8 directions**
+
+```{r}
+x <- init_matrix(15,15,0.125)
+cc_RL <- init_matrix(15,15-1,0.5)
+cc_TB <- init_matrix(15-1,15,0.5)
+cc_DIAG <- init_matrix(15-1,15-1,0.5)
+
+full_dis_sim <- function(prob=0.125){
+  
+  for(i in 1:8){
+    #ABOVE
+    if(i == 1){
+      new_inf_above <- ((x[-1, ] == 1) & cc_TB)
+      
+      xnew <- x
+      xnew[-5, ][new_inf_above] <- 1
+    }
+    #BELOW
+    else if(i == 2){
+      new_inf_below <- ((x[-5, ] == 1) & cc_TB)
+      
+      xnew <- x
+      xnew[-1, ][new_inf_below] <- 1
+    }
+    #RIGHT
+    else if(i == 3){
+      new_inf_right <- ((x[ ,-5] == 1) & cc_RL)
+      
+      xnew <- x
+      xnew[, -1][new_inf_right] <- 1
+    }
+    #LEFT
+    else if(i == 4){
+      new_inf_left <- ((x[ ,-1] == 1) & cc_RL)
+      
+      xnew <- x
+      xnew[, -5][new_inf_left] <- 1
+    }
+    #TOP-RIGHT
+    else if(i == 5){
+      new_inf_top_right <- ((x[-1,-5] == 1) & cc_DIAG)
+      
+      xnew <- x
+      xnew[-5, -1][new_inf_top_right] <- 1
+    }
+    #TOP-LEFT
+    else if(i == 6){
+      new_inf_top_left <- ((x[-1,-1] == 1) & cc_DIAG)
+      
+      xnew <- x
+      xnew[-1, -5][new_inf_top_left] <- 1
+    }
+    #BOT-RIGHT
+    else if(i == 7){
+      new_inf_bot_right <- ((x[-5,-5] == 1) & cc_DIAG)
+      
+      xnew <- x
+      xnew[-1,-1][new_inf_bot_right] <- 1
+    }
+    #BOT-LEFT
+    else if(i == 8){
+      new_inf_bot_left <- ((x[-5,-1] == 1) & cc_DIAG)
+      
+      xnew <- x
+      xnew[-1,-5][new_inf_bot_left] <- 1
+    }
+  }
+  
+  xnew[x == 1] <- 2
+  
+  xnew
+}
+
+full_dis_sim()
+```
+
+```{r}
+dis_plot2 <- function(row,col,input){
+  par(pty="s", mar=c(1,1,1,1), yaxt="n", xaxt="n",ann=FALSE)
+  image(1:col,1:row,input, col =c("white", "red", "gray"))
+}
+
+step1_matrix <- apply(x, 2, rev)
+step2_matrix <- apply(full_dis_sim(), 2, rev)
+
+dis_plot(nrow(step1_matrix),ncol(step1_matrix),t(step1_matrix))
+dis_plot2(nrow(step2_matrix),ncol(step2_matrix),t(step2_matrix))
+```
