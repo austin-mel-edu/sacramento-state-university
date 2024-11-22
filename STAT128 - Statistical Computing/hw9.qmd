@@ -1,0 +1,226 @@
+---
+title: "hw9"
+author: "Austin Melendez"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+Functions from previous homework:
+
+```{r}
+# Set random seed
+set.seed(94128)
+
+init_matrix <- function(row,col,start_prop=0.125){
+  inf_matrix <- matrix(sample(c(0,1), row*col, replace = TRUE, prob=c(1-start_prop,start_prop)), nrow=row, ncol=col)
+}
+
+init_matrix(5,5)
+```
+
+```{r}
+dis_plot <- function(row,col,input){
+  par(yaxt="n", xaxt="n",ann=FALSE)
+  image(1:col,1:row,input)
+}
+```
+
+## HW 9
+
+**1) Function to create matrix with 1's in all 4 corners. Default size (20x30)**
+
+```{r}
+create_crnr_matrix <- function(row=20,col=30){
+  inf_matrix <- matrix(0, nrow=row, ncol=col)
+  inf_matrix[1,1] <- 1
+  inf_matrix[1,col] <- 1
+  inf_matrix[row,1] <- 1
+  inf_matrix[row,col] <- 1
+  print(inf_matrix)
+}
+
+create_crnr_matrix(5,5)
+```
+
+**2) Write a function that accepts a probability and a SIR matrix. The function should iterate the model until no more cells are infected and return a list containing the following:**
+
+-   number of iterations until no more cells were infected
+
+-   probability of infection (same as the argument)
+
+-   proportion of cells ultimately infected
+
+-   final SIR matrix
+
+```{r}
+infection_step <- function(input, inf_prob = 0.5){
+  x <- input
+
+  cc_RL <- init_matrix(nrow(x),ncol(x)-1,inf_prob)
+  cc_TB <- init_matrix(nrow(x)-1,ncol(x),inf_prob)
+  cc_DIAG <- init_matrix(nrow(x)-1,ncol(x)-1,inf_prob)
+  
+  max_col <- ncol(x)
+  max_row <- nrow(x)
+  
+  xnew <- x
+  
+  #ABOVE
+  new_inf_above <- ((x[-1, ] == 1) & cc_TB)
+  xnew[-max_row, ][new_inf_above] <- 1
+  
+  xnew <- x
+  
+  #BELOW
+  new_inf_below <- ((x[-max_row, ] == 1) & cc_TB)
+  xnew[-1, ][new_inf_below] <- 1
+  
+  xnew <- x
+  
+  #RIGHT
+  new_inf_right <- ((x[ ,-max_col] == 1) & cc_RL)
+  xnew[, -1][new_inf_right] <- 1
+      
+  xnew <- x
+  
+  #LEFT
+  new_inf_left <- ((x[ ,-1] == 1) & cc_RL)
+  xnew[, -max_col][new_inf_left] <- 1
+  
+  xnew <- x
+  
+  #TOP RIGHT
+  new_inf_top_right <- ((x[-1,-max_col] == 1) & cc_DIAG)
+  xnew[-max_row, -1][new_inf_top_right] <- 1
+  
+  xnew <- x
+  
+  #TOP LEFT
+  new_inf_top_left <- ((x[-1,-1] == 1) & cc_DIAG)
+  xnew[-1, -max_col][new_inf_top_left] <- 1
+  
+  xnew <- x
+  
+  #BOTTOM LEFT
+  new_inf_bot_left <- ((x[-max_row,-1] == 1) & cc_DIAG)
+  xnew[-1,-max_col][new_inf_bot_left] <- 1
+  
+  xnew <- x
+  
+  #BOTTOM RIGHT
+  new_inf_bot_right <- ((x[-max_row,-max_col] == 1) & cc_DIAG)
+  xnew[-1,-1][new_inf_bot_right] <- 1
+      
+  #Set previously infected cells to 2
+  xnew[x == 1] <- 2
+  
+  #print(xnew)
+  return(xnew)
+}
+```
+
+```{r}
+simulate_sir <- function(inf_prob = 0.5, row, col, start_inf = 0.125){
+  x <- matrix(sample(c(0,1), row*col, replace = TRUE, prob=c(1-start_inf,start_inf)), nrow=row, ncol=col)
+
+  step_count <- 0
+  
+  while(any(x == 1)){
+    x <- infection_step(x, inf_prob)
+    #Increment step count for each run
+    step_count <- step_count + 1
+  }
+  
+  num_inf <- sum(x==1) + sum(x==2)
+  num_healthy <- sum(x==0)
+  num_total <- ncol(x) * nrow(x)
+  
+  prop <- num_inf / num_total
+  
+  #Print list of results
+  list(steps = step_count, start_inf = start_inf, inf_prob = inf_prob, prop = prop, final_matrix = x)
+}
+
+simulate_sir(0.5,20,30,0.125)
+```
+
+**3) Starting with a 20x30 corner infected matrix, simulate the function at least 1000 times. Summarize all the resulting SIR matrices with one visualization. Which cells are most/least likely to be infected?**
+
+```{r}
+simulation <- function(prob, row, col){
+  simulations <- replicate(1000, simulate_sir(row,col,prob), simplify = FALSE)
+
+  sx <- 0
+  for(s in simulations){
+    sx <- sx + s[["final_matrix"]]
+  }
+
+  sx <- apply(sx, 2, rev)
+  dis_plot(nrow(sx),ncol(sx),t(sx))
+}
+
+#simulate(0.5)
+```
+
+Cells generally around the middle seem more likely to get infected. On the visualization above, the darker color the more likely to get infected. Interestingly the first column and the first row are significantly less likely to get infected.
+
+**4) Simulate using simulate_sir at least 1000 times while varying the probability of infection and create a data frame with one row for every simulation, containing at least the following columns:**
+
+-   number of iterations until no more cells were infected
+
+-   probability of infection
+
+-   proportion of cells ultimately infected
+
+**How do these variables appear to be related? Visualize the relationship between them.**
+
+```{r}
+prop_infect <- seq(from = 0.1, to = 0.9, by = 0.1)
+
+results <- lapply(prop_infect, simulate_sir, row=15, col=15)
+
+results2 <- data.frame(
+  prob = sapply(results, `[[`, "inf_prob"),
+  steps = sapply(results, `[[`, "steps"),
+  prop = sapply(results, `[[`, "prop")
+)
+ 
+results2
+
+```
+
+```{r}
+multiple_sim <- function(prob, runs, row, col){
+  simulations <- replicate(runs, simulate_sir(prob, row, col), simplify = FALSE)
+}
+
+
+test <- function(prob, runs, row, col){
+  simulations <- replicate(runs, simulate_sir(prob, row, col), simplify = FALSE)
+  
+  prop_infect <- seq(from = 0.1, to = 0.9, by = 0.1)
+
+  results <- lapply(prop_infect, simulate_sir, row=row, col=col)
+
+  results2 <- data.frame(
+    prob = sapply(results, `[[`, "inf_prob"),
+    steps = sapply(results, `[[`, "steps"),
+    prop = sapply(results, `[[`, "prop")
+  )
+  
+  print(results2)
+}
+
+test(0.5, 100, 15, 15)
+```
+
+According to the different heat maps generated by all 10 infection probabilities, the higher and lower probabilities often leads to a more scattered and evenly distributed number of infected cells. As you get closer to a 0.5 probabilty the center of the matrix seems to have a much higher probabilty of becoming infected as they are significantly darker.
+
+```{r}
+library(tidyverse)
+ggplot(results2, aes(x = prob, y = prop)) + geom_point()
+```
+
+The data frame is not being created above correctly, this is commented out so I can render the file. My data frame is NULL in every category for some reason.
