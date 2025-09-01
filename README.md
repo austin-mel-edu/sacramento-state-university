@@ -3,9 +3,9 @@
 This repository is home to all of my solutions to assignments for courses I have enrolled in. It contains both courses from institutions as well as online challenges and certificate courses. All coding materials and solutions were created and completed while I was enrolled at California State University - Sacramento.
 
 ## Table of Contents
-I. [About the Repo](#About%20the%repository):
+I. [About the Repo](#about-the-repository):
 
-II. [About the Student](#About%20the%20student):
+II. [About the Student](#about-the-student):
 
 III. [Computer Science Courses]():
   1. [CSC 20 - Programming Concepts II]():
