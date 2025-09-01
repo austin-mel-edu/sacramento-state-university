@@ -7,33 +7,31 @@ I. [About the Repo](#about-the-repository):
 
 II. [About the Student](#about-the-student):
 
-III. [Computer Science Courses]():
-  1. [CSC 20 - Programming Concepts II]():
-  2. [CSC 60 - Systems Programming in UNIX]():
-  3. [CSC 130 - Data Structures & Algorithms]():
-  4. [CSC 131 - Software Engineering]():
-  5. [CSC 133 - Object-Oriented Programming]():
-  6. [CSC 134 - Database Management Systems]():
-  7. [CSC 135 - Computiability & Formal Languages]():
-  8. [CSC 138 - Networkking Fundamentals]():
-  9. [CSC 173 - Data Visualization]():
-  10. [CSC 180 - Intelligent Systems]():
-  11. [CSC 190/191 - Senior Project]():
-  12. [CSC 193A - Web Programming]():
-  13. [CSC 196A - Computational Biology]():
+III. [Computer Science Courses](https://github.com/austin-mel-edu/sacramento-state-university.git):
+  1. [CSC 20 - Programming Concepts II](./CSC20%20-%20Programming%20Concepts%20II):
+  2. [CSC 28 - Discrete Structures](./CSC28%20-%20Discrete%20Structures):
+  3. [CSC 35 - Intro to System Architecture]():
+  4. [CSC 60 - Systems Programming in UNIX](./CSC60%20-%20Systems%20Programming%20in%20UNIX):
+  5. [CSC 130 - Data Structures & Algorithms](./CSC130%20-%20Data%20Structures%20%26%20Algorithms):
+  6. [CSC 131 - Software Engineering](./):
+  7. [CSC 133 - Object-Oriented Programming](./):
+  8. [CSC 134 - Database Management Systems](./CSC134%20-%20Database%20Management%20Systems):
+  9. [CSC 135 - Computiability & Formal Languages](./CSC135%20-%20Computability%20%26%20Formal%20Languages):
+  10. [CSC 138 - Networkking Fundamentals](./CSC138%20-%20Networking%20Fundamentals):
+  11. [CSC 173 - Data Visualization](./CSC173%20-%20Data%20Visualization):
+  12. [CSC 180 - Intelligent Systems](./CSC180%20-%20Intelligent%20Systems):
+  13. [CSC 190/191 - Senior Project](./):
+  14. [CSC 193A - Web Programming](./CSC193A%20-%20Web%20Programming):
+  15. [CSC 196A - Computational Biology](./CSC196A%20-%20Computational%20Biology):
 
-IV. [Statistics Courses]():
+IV. [Statistics Courses](https://github.com/austin-mel-edu/sacramento-state-university.git):
   1. [STAT 128 - Statistical Computing]():
   2. [STAT 129 - Analyzing & Processing Big Data]():
   3. [STAT 140A - Linear Models]():
   4. [STAT 140B - Statistical Learning]():
 
-V. [Mathematics Courses]():
+V. [Mathematics Courses](https://github.com/austin-mel-edu/sacramento-state-university.git):
   1. [MATH 64 - Mathematical Programming]():
-
-VI. [Other Courses]():
-  1. [CHEM 1A  - General Chemistry ]():
-  2. [NUFD 10 - General Nutrition]():
 
 
 
