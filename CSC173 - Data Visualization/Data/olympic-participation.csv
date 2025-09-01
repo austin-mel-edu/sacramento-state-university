@@ -1,0 +1,109 @@
+year,city,country,season,gender,participants,percentage
+1896,Athens,Greece,summer,female,0,0
+1900,Paris,France,summer,female,22,0.022
+1904,St. Louis,United States,summer,female,6,0.009
+1908,London,Great Britain,summer,female,37,0.018
+1912,Stockholm,Sweden,summer,female,48,0.02
+1920,Antwerp,Belgium,summer,female,63,0.024
+1924,Paris,France,summer,female,135,0.044
+1928,Amsterdam,Netherlands,summer,female,277,0.096
+1932,Los Angeles,United States,summer,female,126,0.09
+1936,Berlin,Germany,summer,female,331,0.083
+1948,London,Great Britain,summer,female,390,0.095
+1952,Helsinki,Finland,summer,female,519,0.105
+1956,Melbourne,Australia,summer,female,376,0.133
+1960,Rome,Italy,summer,female,611,0.114
+1964,Tokyo,Japan,summer,female,678,0.132
+1968,Mexico Ciy,Mexico,summer,female,781,0.142
+1972,Munich,Federal Republic of Germany,summer,female,1059,0.146
+1976,Montreal,Canada,summer,female,1260,0.207
+1980,Moscow,USSR,summer,female,1115,0.215
+1984,Los Angeles,United States,summer,female,1566,0.23
+1988,Seoul,South Korea,summer,female,2194,0.261
+1992,Barcelona,Spain,summer,female,2704,0.288
+1996,Atlanta,United States,summer,female,3512,0.34
+2000,Sydney,Australia,summer,female,4069,0.382
+2004,Athens,Greece,summer,female,4329,0.407
+2008,Beijing,China,summer,female,4637,0.424
+2012,London,Great Britain,summer,female,4676,0.442
+2016,Rio,Brazil,summer,female,5059,0.45
+2020,Tokyo,Japan,summer,female,5457,0.478
+2024,Paris,France,summer,female,5250,0.5
+1924,Chamonix,France,winter,female,11,0.043
+1928,St. Moritz,Switzerland,winter,female,26,0.056
+1932,Lake Placid,United States,winter,female,21,0.083
+1936,Garmisch-Partenkirchen,Germany,winter,female,80,0.12
+1948,St. Moritz,Switzerland,winter,female,77,0.115
+1952,Oslo,Norway,winter,female,109,0.157
+1956,Cortina d'Ampezzo,Italy,winter,female,134,0.17
+1960,Squaw Valley,United States,winter,female,144,0.215
+1964,Innsbruck,Austria,winter,female,199,0.183
+1968,Grenoble,France,winter,female,211,0.182
+1972,Sapporo,Japan,winter,female,205,0.205
+1976,Innsbruck,Austria,winter,female,231,0.206
+1980,Lake Placid,United States,winter,female,232,0.217
+1984,Sarajevo,Yugoslavia,winter,female,274,0.215
+1988,Calgary,Canada,winter,female,301,0.212
+1992,Albertville,France,winter,female,488,0.271
+1994,Lillehammer,Norway,winter,female,522,0.3
+1998,Nagano,Japan,winter,female,787,0.362
+2002,Salt Lake City,United States,winter,female,886,0.369
+2006,Turin,Italy,winter,female,960,0.382
+2010,Vancouver,Canada,winter,female,1044,0.407
+2014,Sochi,Russia,winter,female,1121,0.403
+2018,Pyeongchang,South Korea,winter,female,1169,0.41
+2022,Beijing,China,winter,female,1267,0.447
+1896,Athens,Greece,summer,male,241,1
+1900,Paris,France,summer,male,997,0.978
+1904,St. Louis,United States,summer,male,645,0.991
+1908,London,Great Britain,summer,male,1971,0.982
+1912,Stockholm,Sweden,summer,male,2359,0.98
+1920,Antwerp,Belgium,summer,male,2561,0.976
+1924,Paris,France,summer,male,2954,0.956
+1928,Amsterdam,Netherlands,summer,male,2606,0.904
+1932,Los Angeles,United States,summer,male,1206,0.91
+1936,Berlin,Germany,summer,male,3632,0.917
+1948,London,Great Britain,summer,male,3714,0.905
+1952,Helsinki,Finland,summer,male,4436,0.895
+1956,Melbourne,Australia,summer,male,2938,0.867
+1960,Rome,Italy,summer,male,4727,0.886
+1964,Tokyo,Japan,summer,male,4473,0.868
+1968,Mexico Ciy,Mexico,summer,male,4435,0.858
+1972,Munich,Federal Republic of Germany,summer,male,6075,0.854
+1976,Montreal,Canada,summer,male,4824,0.793
+1980,Moscow,USSR,summer,male,4064,0.785
+1984,Los Angeles,United States,summer,male,5263,0.77
+1988,Seoul,South Korea,summer,male,6197,0.739
+1992,Barcelona,Spain,summer,male,6652,0.712
+1996,Atlanta,United States,summer,male,6806,0.66
+2000,Sydney,Australia,summer,male,6582,0.618
+2004,Athens,Greece,summer,male,6296,0.593
+2008,Beijing,China,summer,male,6305,0.576
+2012,London,Great Britain,summer,male,5892,0.558
+2016,Rio,Brazil,summer,male,6179,0.55
+2020,Tokyo,Japan,summer,male,5651,0.512
+2024,Paris,France,summer,male,5250,0.5
+1924,Chamonix,France,winter,male,245,0.957
+1928,St. Moritz,Switzerland,winter,male,437,0.944
+1932,Lake Placid,United States,winter,male,220,0.917
+1936,Garmisch-Partenkirchen,Germany,winter,male,566,0.88
+1948,St. Moritz,Switzerland,winter,male,592,0.895
+1952,Oslo,Norway,winter,male,585,0.853
+1956,Cortina d'Ampezzo,Italy,winter,male,689,0.83
+1960,Squaw Valley,United States,winter,male,521,0.795
+1964,Innsbruck,Austria,winter,male,891,0.827
+1968,Grenoble,France,winter,male,947,0.828
+1972,Sapporo,Japan,winter,male,800,0.795
+1976,Innsbruck,Austria,winter,male,892,0.794
+1980,Lake Placid,United States,winter,male,839,0.783
+1984,Sarajevo,Yugoslavia,winter,male,998,0.785
+1988,Calgary,Canada,winter,male,1108,0.788
+1992,Albertville,France,winter,male,1313,0.739
+1994,Lillehammer,Norway,winter,male,1217,0.7
+1998,Nagano,Japan,winter,male,1514,0.648
+2002,Salt Lake City,United States,winter,male,1513,0.641
+2006,Turin,Italy,winter,male,1548,0.628
+2010,Vancouver,Canada,winter,male,1522,0.593
+2014,Sochi,Russia,winter,male,1659,0.597
+2018,Pyeongchang,South Korea,winter,male,1664,0.59
+2022,Beijing,China,winter,male,1582,0.563
