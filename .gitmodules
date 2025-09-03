@@ -1,7 +1,1 @@
 
-[submodule "CSC131 - Software Engineering/csc131.mock.front-end"]
-	path = CSC131 - Software Engineering/csc131.mock.front-end
-	url = https://github.com/austin-mel/csc131.mock.front-end
-[submodule "CSC131 - Software Engineering/Original"]
-	path = CSC131 - Software Engineering/Original
-	url = https://github.com/austin-mel-edu/csc131-semester-project
