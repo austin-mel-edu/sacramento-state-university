@@ -1,3 +1,7 @@
-[submodule "CSC131 - Software Engineering/pharmatrial"]
-	path = CSC131 - Software Engineering/pharmatrial
-	url = https://github.com/austin-mel/pharmatrial.git
+[submodule "CSC131 - Software Engineering/Original Project"]
+	path = CSC131 - Software Engineering/Original Project
+	url = https://github.com/austin-mel-edu/csc131-semester-project.git
+
+[submodule "CSC131 - Software Engineering/Fork for Portfolio Project"]
+	path = CSC131 - Software Engineering/Fork for Portfolio Project
+	url = https://github.com/austin-mel/csc131.mock.front-end.git
