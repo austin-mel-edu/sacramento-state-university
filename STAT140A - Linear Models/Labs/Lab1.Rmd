@@ -1,0 +1,152 @@
+---
+title: "Simple Linear Regression in R"
+author: "Lauren Perry"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# load in data
+data("faithful")
+```
+## Initial Data Analysis
+
+Before jumping right into a regression model (or any statistical inference), we should perform some kind of initial data analysis.
+
+Numerical summaries:
+
+- means and medians
+- standard deviations
+- maximums and minimums
+- correlations
+- etc.
+
+Graphical summaries
+- boxplots
+- histograms
+- bar plots
+- scatterplots
+- etc. 
+
+These help us examine potential problems with the data, outliers, skewed or unusual distributions, missing data, and structure of the data. 
+
+### Example: Data Cleaning and Numeric Summaries
+
+```{r}
+# install.package(faraway)
+library(faraway)
+data(pima)
+pima
+```
+
+```{r}
+summary(pima) # some numeric summaries
+```
+
+We may not know a ton about these different measurements, but there are some obviously places of concern. For example, a BMI of 0 or a diastolic blood pressure of 0.
+
+```{r}
+sum(pima$diastolic == 0)
+```
+
+In this case, because these 0 values are impossible, we should treat these as missing data.
+
+```{r}
+pima$diastolic[pima$diastolic == 0] <- NA
+pima$glucose[pima$glucose == 0] <- NA
+pima$triceps[pima$triceps == 0] <- NA
+pima$insulin[pima$insulin == 0] <- NA
+pima$bmi[pima$bmi == 0] <- NA
+```
+
+(In practice, we should talk to a subject matter expert, usually the person whose data we're analyzing, to make final calls on this type of thing.)
+
+```{r}
+summary(pima)
+```
+
+The `test` variable is a binary categorical variable, but is appearing in the data as numbers. We should fix that too
+
+```{r}
+pima$test <- factor(pima$test)
+summary(pima$test)
+```
+
+In fact, 0 represents a negative test and 1 a positive test. 
+
+```{r}
+levels(pima$test)
+levels(pima$test) <- c("negative","positive")
+summary(pima$test)
+```
+
+### Example: Plots
+
+Now that we've examined and cleaned up the data, we can make some plots.
+
+```{r}
+par(mfrow=c(1,3))
+hist(pima$diastolic, main="", xlab="Diastolic Blood Pressure") #histogram
+plot(density(pima$diastolic, na.rm=TRUE), main="", ylab="Diastolic Blood Pressure") #kernel density plot
+plot(sort(pima$diastolic), pch=".") #index plot of sorted values
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(diabetes ~ diastolic, pima) # scatterplot
+plot(diabetes ~ test, pima) # side by side box plots
+```
+## Regression Basics
+
+### Example: Old Faithful
+
+Here, we use the`faithful` dataset in R to examine a linear regression model.
+
+```{r}
+# numeric summary of data
+summary(faithful)
+
+# graphical summaries
+hist(faithful$eruptions, freq=FALSE,
+     main="Old Faithful Geyser", xlab="Eruption Duration")
+hist(faithful$waiting, freq=FALSE,
+     main="Old Faithful Geyser", xlab="Waiting Time")
+
+plot(eruptions ~ waiting, data=faithful, main="Old Faithful Geyser",
+     xlab="Waiting Time", ylab="Eruption Duration")
+```
+
+### Simple Linear Regression
+
+```{r}
+mod1 <- lm(eruptions ~ waiting, data=faithful)
+mod1
+
+# add line to plot
+plot(eruptions ~ waiting, data=faithful, main="Old Faithful Geyser",
+     xlab="Waiting Time", ylab="Eruption Duration")
+abline(mod1) # this is where the line gets added
+```
+
+### Correlation
+
+```{r}
+# correlation
+cor(faithful$waiting, faithful$eruptions)
+```
+
+## Multiple Linear Regression 
+
+Let's go back to the `pima` dataset. We want to predict the `diabetes` variable.
+
+```{r}
+mod2 <- lm(diabetes ~ pregnant + glucose + diastolic + 
+             triceps + insulin + bmi + age + test, data=pima)
+mod2
+
+mod3 <- lm(diabetes ~ ., pima)
+mod3
+```
