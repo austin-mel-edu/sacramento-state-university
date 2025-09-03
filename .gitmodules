@@ -5,3 +5,9 @@
 [submodule "CSC131 - Software Engineering/Fork for Portfolio Project"]
 	path = CSC131 - Software Engineering/Fork for Portfolio Project
 	url = https://github.com/austin-mel/csc131.mock.front-end.git
+[submodule "CSC131 - Software Engineering/csc131"]
+	path = CSC131 - Software Engineering/csc131
+	url = https://github.com/austin-mel-edu/csc131-semester-project
+[submodule "CSC131 - Software Engineering/mock"]
+	path = CSC131 - Software Engineering/mock
+	url = https://github.com/austin-mel/csc131.mock.front-end.git
