@@ -2,3 +2,6 @@
 [submodule "CSC131 - Software Engineering/Original Project"]
 	path = CSC131 - Software Engineering/Original Project
 	url = https://github.com/austin-mel-edu/csc131-semester-project
+[submodule "CSC180 - Intelligent Systems/Labs"]
+	path = CSC180 - Intelligent Systems/Labs
+	url = https://github.com/austin-mel-edu/csc180-tensorflow-labs.git
