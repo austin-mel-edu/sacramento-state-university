@@ -41,28 +41,33 @@ c = -4
 z = -b + math.sqrt((b ** 2) - (4*a*c))
 x = z / 2 * a
 print(x)
+#2.9282032302755088
 
 #7
 p = 0.4
 k = 3
 pxk = ((1 - p) ** (k - 1)) * p
 print(pxk)
+#0.144
 
 #8
 n = 5
 p = 0.25
 binom_std = math.sqrt(n * p * (1 - p))
 print(binom_std)
+#0.9682458365518543
 
 #9
 i = 2
 pmf = 1 / (2 ** i)
 print(pmf)
+#0.25
 
 #10
 x = 5
 sigma = 2
 mu = 3
-z = -((x - mu) ** 2 / 2 * (sigma ** 2))
-pdf = (1 / math.sqrt(2 * math.pi * (sigma ** 2))) * math.exp(z)
+z = -(((x - mu) ** 2) / (2 * (sigma ** 2)))
+pdf = (1 / (math.sqrt(2 * math.pi * (sigma ** 2)))) * math.exp(z)
 print(pdf)
+#0.12098536225957168
