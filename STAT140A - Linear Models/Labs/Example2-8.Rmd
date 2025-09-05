@@ -1,0 +1,71 @@
+---
+title: "2.8 Example"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Example: Galapagos Islands Tortoises
+
+```{r}
+library(faraway)
+data(gala)
+head(gala)
+```
+
+From the help file:
+
+- `Species`: the number of plant species found on the island
+- `Endemics`: the number of endemic species
+- `Area`: the area of the island (km$^2$)
+- `Elevation`: the highest elevation of the island (m)
+- `Nearest`: the distance from the nearest island (km)
+- `Scruz`: the distance from Santa Cruz island (km)
+- `Adjacent`: the area of the adjacent island (square km)
+
+```{r}
+mod1 <- lm(Species ~ Area + Elevation + Nearest + Scruz + Adjacent, data=gala)
+summary(mod1)
+```
+
+There's a lot here, most of which we will come back to later. For now, we can see the coefficient estimates and the $R^2$ value. 
+
+We can also directly calculate quantities of interest.
+
+```{r}
+x <- model.matrix(~ Area + Elevation + Nearest + Scruz + Adjacent, data=gala)
+head(x)
+
+y <- gala$Species
+```
+
+Now we can do some matrix math. Here, we will calculate $(X^TX)^{-1}$ and $(X^tX)^{-1}X^Ty$
+
+```{r}
+XtXi <- solve(t(x) %*% x) # `solve` gives the inverse
+XtXi %*% t(x) %*% y
+```
+
+Behind the scenes, this is a poor way to compute $\hat{\beta}$. The `lm` function has been carefully programmed to avoid some of the issues that arise using R's matrix math, so it's best to just use that all the time.
+
+We can extract all kinds of useful information from our regression model from what the `lm` command stores in R:
+
+```{r}
+residuals(mod1) # residuals
+fitted(mod1) # fitted values (y-hat)
+
+names(mod1)
+names(summary(mod1))
+```
+
+Or compute or extract $R^2$
+
+```{r}
+1-deviance(mod1)/sum((y-mean(y))^2)
+## OR ##
+summary(mod1)$r.squared
+```
