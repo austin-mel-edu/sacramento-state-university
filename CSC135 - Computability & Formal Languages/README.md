@@ -1,0 +1,4 @@
+# CSC 135 Computability and Formal Languages
+### Prerequisite(s): CSC28, CSC35, CSC130
+
+Introduction to limits of computation and techniques for specifying and processing formal languages. Regular languages, regular expressions, finite automata, properties and limitations. Context-free languages, grammars, pushdown automata, properties and limitations. Applications in lexical and syntax analyses, including recursive-descent or table-driven parsing. Turing machines, halting problem, reductions. Introduction to functional programming and related programming language features.
