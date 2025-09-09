@@ -8,3 +8,6 @@
 [submodule "CSC139 - Operating System Principles/Textbook Examples"]
 	path = CSC139 - Operating System Principles/Textbook Examples
 	url = https://github.com/austin-mel-edu/csc139-textbook-examples
+[submodule "CSC139 - Operating System Principles/Textbook Labs"]
+	path = CSC139 - Operating System Principles/Textbook Labs
+	url = https://github.com/austin-mel-edu/csc139-textbook-projects
