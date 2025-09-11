@@ -1,0 +1,105 @@
+---
+title: "STAT140A HW2"
+author: "Austin Melendez"
+date: "2025-09-07"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### The following was completed for the STAT 140A - Homework 2 assignment.
+# Homework 2
+## Use the mtcars dataset in R to answer the following questions.
+
+### 1) What is the linear regression model that uses car weight to predict miles per gallon?
+
+```{r}
+# Load data
+data(mtcars)
+
+# Create linear regression model
+model <- lm(mpg ~ wt, data = mtcars)
+```
+
+The linear regression model that uses weight to predict miles per gallon is stored in the variable `model`. Below is a summary of this model.
+
+```{r}
+# Summary of model
+summary(model)
+```
+### 2) What is the correlation between car weight and miles per gallon?
+
+```{r}
+# Calculate the correlation between wt and mpg
+cor(mtcars$wt, mtcars$mpg)
+```
+
+The correlation coefficient is *bold*$-0.8677$*bold*. This indicates a strong negative linear relationship between car weight and miles per gallon.
+
+### 3) What are the null and alternative hypotheses for testing whether a specific predictor variable is useful in the model?
+
+Assuming the regression equation is: $mpg = \beta_0 + \beta_1 \times wt + \epsilon $. <br>
+
+$H_0 : \beta_1 = 0$ <br>
+
+The predictor (weight) has no effect on the result (mpg).
+
+$H_1 : \beta_1 \neq 0$ <br>
+
+The predictor (weight) does affect the result (mpg). <br>
+
+From above in our summary we can see that the p-value for weight is $1.29 \times 10^{-10}$.
+
+This p-value is far less than $0.05$ so we reject the null hypothesis.
+
+This means car weight *italic*is*italic* statistically significant predictor of mpg.
+
+### 4) Use all of the variables to predict miles per gallon.
+
+#### A) What is the coefficient associated with weight? Interpret this coefficient.
+
+```{r}
+# Make a model with all the variables to predict mpg
+full_model <- lm(mpg ~ ., data = mtcars)
+
+summary(full_model)
+```
+The coefficient associated with weight in the full model is $-3.71530$. This means the effect of the vehicles weight on the calculation has gone down slightly from our linear model. In our full model, while holding all other variables constant, for every 1 unit decrease in weight, the model predicts that mpg decreases by approximately 3.72 miles per gallon.
+
+<br>
+
+#### B) What is $R^2$ for this model? Interpret this value.
+
+$\ R^2 = 0.869$ in this model. This means that 86.9% of the variability in miles per gallon is explained by the model using all 10 predictor values. Therefore, we can conclude that this model does a very good job of estimating the miles per gallon of cars in this data set.
+
+<br>
+
+#### C) Is the overall model significant? Is it useful? Explain.
+
+The overall model *italic*is*italic* significant. We can confirm this by looking above at our model summary. Our full model has a F-statistic value of $13.93$ and a p-value of $\ 3.793 \times 10^{-7}$, which is much less than $0.05$.
+
+Since our p-value is extremely small, we reject the null hypothesis. Therefore at least one predictor is significantly related to mpg.
+
+The model is statistically useful because it has an $R^2 = 0.869$, meaning the model is a strong fit to the data. However, I do notice that the $adjusted\ R^2$ value is slightly lower at $adjusted\ R^2 = 0.8066$. this means that not all predictors are contributing meaningfully to the model.
+
+Investigating further, if we look at the p-values for all of our coefficients, we can see that they are all significantly above $0.05$. This means we could classify them as not being statistically significant predictors of miles per gallon in this configuration. This includes the weight predictor which, due to the inclusion of every variable, has risen to $0.0633$ which is also above the cutoff of $0.05$.
+
+<br>
+
+#### D) Is displacement significant in this model? Explain.
+
+Inspecting the full model summary again, we see that for the displacement column we got:
+
+Estimate (Coefficient): $0.01334$ <br>
+Standard Error: $0.01786$ <br>
+t-value: $0.747$ <br>
+p-value: $0.4635$ <br>
+
+The p-value for displacement is much greater than $0.05$. This means we fail to reject the null hypothesis that the coefficient for disp is 0.
+
+This means, we can conclude that displacement is *italics*not*italics* statistically significant with the other variables in the model.
+
