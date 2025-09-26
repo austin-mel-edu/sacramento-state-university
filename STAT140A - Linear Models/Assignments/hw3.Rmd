@@ -1,0 +1,186 @@
+---
+title: "hw3"
+author: "Austin Melendez"
+date: "2025-09-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data
+In this homework, we are once again working with the faraway library. This time we are using the prostate data set.We will fit a linear regression model with `lspa` as the response and all the other variables as predictors.
+```{r}
+library(faraway)
+data(prostate)
+
+full_model <- lm(lpsa ~ ., data=prostate)
+```
+
+### 1(a) 
+Lets suppose a new patient arrives with the following values:
+```{r}
+new_patient <- data.frame(
+  lcavol  = 1.44692,
+  lweight = 3.62301,
+  age     = 65,
+  lbph    = 0.30010,
+  svi     = 0,
+  lcp     = -0.79851,
+  gleason = 7,
+  pgg45   = 15
+)
+```
+We want to predict the lpsa for this patient along with an appropriate 95% CI.
+```{r}
+predict(full_model, newdata=new_patient, interval="confidence", level=0.95)
+```
+
+### 1(b)
+Lets repeat the last question except the patient is age 20.
+
+```{r}
+new_patient2 <- new_patient
+new_patient2$age <- 20
+
+predict(full_model, newdata=new_patient2, interval="confidence", level=0.95)
+```
+The CI is wider for this patient because the age is set to $$20$$. This age is far outside the majority of the data, which is clustered around older men (40-80). The model has little information at the lower age range, so the standard errors of the predictions increases making the CI wider.
+
+### 1(c)
+Now lets do it again, but remove all the predictors that are not significant at the 5% level and recompute the predictions.
+
+```{r}
+summary(full_model)
+```
+The predictors that are significant at the 5% level are: `lcavol`, `lweight`, `svi`, `age`, and `lbph`. This can be seen when observing their p-scores. All other predictors have a p-score value significantly above $$0.05$$. Although `age` and `lbph` are technically above $$0.05$$, they are marked at the 5% level in the summary so you may want to re-run the model after removing `lcp`, `gleason`, and `pgg45` to see if the significance values change.
+
+```{r}
+reduced_model <- lm(lpsa ~ lcavol + lweight + svi, data=prostate)
+
+summary(reduced_model)
+```
+After testing models with different predictors, this model ensures all predictors have over 5% significance level.
+
+Lets recompute the predictions of the previous question.
+```{r}
+predict(reduced_model, newdata=new_patient, interval="confidence", level=0.95)
+predict(reduced_model, newdata=new_patient2, interval="confidence", level=0.95)
+```
+Therefore, from our model we predict the `lpsa` to be *bold*$$2.369994$$*bold* for `newpatient` with a CI of $$[2.195284, 2.544704]$$. As well as a `lpsa` to be *bold*$$3.040145$$*bold* for `newpatient2` with a CI of $$[2.082969, 3.997322]$$.
+
+### 3(a)
+``` {r}
+xtabs(water ~ temp + humid, snail) / 4
+```
+No, we cannot use this table to predict for `temp` = 25C, `humid` = 60%. The table only has values at the exact levels in the data/experiment. In order to predict at (25,60) we would have to interpolate or extrapolate our data.
+
+### 3(b)
+```{r}
+model <- lm(water ~ temp + humid, data=snail)
+```
+To create these predictions we fit a linear model using `temp` and `humid` as predictors. Let's now predict at $$(25,60)$$.
+
+```{r}
+new_observation <- data.frame(temp=25, humid=60)
+predict(model, newdata=new_observation, interval="confidence")
+```
+Therefore, from our model we predict the water content to be *bold*76.43681*bold* at `temp` = 25 and `humid` = 60 with a CI of [73.69926, 79.17436].
+
+### 3(c)
+Lets predict at $$(30,75)$$
+```{r}
+new_observation2 <- data.frame(temp=30, humid=75)
+predict(model, newdata=new_observation2, interval="confidence")
+```
+Therefore, from our model we predict the water content to be *bold*82.62248*bold* at `temp` = 25 and `humid` = 60 with a CI of [79.2879, 85.95706].
+
+We are relying on the assumption of linearity to do these predictions!
+
+### 3(d)
+The intercept of our model is 52.6%. This corresponds to the prediction when `temp` = 0 and `humid` = 0. Yes the prediction is unique, it will always correspond to $$(0,0)$$ in the fitted linear model. If does not represent a reasonable real-world prediction since no snail would reasonably live at 0°C and 0% humidity.
+
+### 3(e)
+We want `humid` $$ h $$ such that `temp` = 25.
+
+$$80 = \hat{\beta}_{0} + \hat{\beta}_{1}(25) + \hat{\beta}_{2}h$$
+
+```{r}
+coefs <- coef(model)
+beta0 <- coefs[1]
+beta1 <- coefs[2]
+beta2 <- coefs[3]
+
+humid <- (80 - beta0 - beta1*25) / beta2
+humid
+```
+Therefore, from our model we predict the humidity to be *bold*67.52538*bold* at `temp` = 25.
+
+### 5(a)
+```{r}
+library(faraway)
+data(fat)
+
+model_full <- lm(brozek ~ age + weight + height + neck + chest + abdom +
+hip + thigh + knee + ankle + biceps + forearm + wrist, data=fat)
+model_small <- lm(brozek ~ age + weight + height + abdom, data=fat)
+
+#summary(model_full)
+#summary(model_small)
+
+anova(model_small, model_full)
+```
+To determine if the smaller model is justifiable to use, lets compare them.
+
+The ANOVA comparison between the smaller and full models is highly significant 
+($p < 2.2 \times 10^{-16}$), showing that the full model explains much more of the variation in body fat percentage. However, the smaller model uses only four easily obtained predictors `age`, `weight`, `height`, `abdomen circumference`, while the full model requires thirteen different body measurements.
+
+### 5(b)
+To get a 95% prediction interval at median predictors so we can compare the results to the interval for the full model, lets first calculate the medians.
+```{r}
+meds_small <- apply(fat[, c("age","weight","height","abdom")], 2, median)
+new_small <- as.data.frame(as.list(meds_small))
+
+meds_full <- apply(fat[, c("age","weight","height","neck","chest","abdom",
+             "hip","thigh","knee","ankle","biceps","forearm","wrist")],
+             2, median)
+new_full <- as.data.frame(as.list(meds_full))
+```
+Then we'll compute the intervals.
+```{r}
+predict(model_small, newdata=new_small, interval="prediction", level=0.95)
+predict(model_full, newdata=new_full, interval="prediction", level=0.95)
+```
+With both our CI's almost exactly the same, they do *bold*not*nold* differ by a practically important amount. This means we can use the smaller (less-complicated) model while delivering the same predictive accuracy as the complex model.
+
+### 5(c)
+```{r}
+subset <- 25:50
+
+res <- rstudent(model_small)[subset]
+cook <- cooks.distance(model_small)[subset]
+
+data.frame(case = subset,
+           rstudent = res,
+           cooks = cook)[order(-abs(res)), ]
+```
+The two observations with the highest studentized residual and thus the most  anomalous observations are `case` = 39 and `case` = 41.  Case 39 has a high studentized residual and case 41 has the highest Cook's distance out of the others in the subset.
+
+### 5(d)
+Let's remove the anomalies and refit the smaller model.
+```{r}
+fat_clean <- fat[-c(39,41), ]
+
+model_small_clean <- lm(brozek ~ age + weight + height + abdom, data=fat_clean)
+```
+Let's then recompute the medians for predictors in this cleaned data.
+```{r}
+meds_clean <- apply(fat_clean[, c("age","weight","height","abdom")], 2, median)
+new_clean <- as.data.frame(as.list(meds_clean))
+```
+Now let's calculate our new 95% PI.
+```{r}
+predict(model_small_clean, newdata=new_clean, interval="prediction", level=0.95)
+```
+Our new PI is $$[9.925792, 25.86951]$$. If we compare it to our orignial PI, we can see that removing the two anomalous cases does not substantially change the prediction interval at median predictor values. Therefore, they do not strongly affect the model predictions.
