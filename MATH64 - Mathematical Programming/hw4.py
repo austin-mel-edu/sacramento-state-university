@@ -77,13 +77,16 @@ def fizzbuzz(n):
             print(x)
 
 # fizzbuzz(20)
-# 1, 2, Fizz, 4, Buzz, Fizz, 7, 8, Fizz, Buzz, 11, Fizz, 13, 14, Fizz Buzz, 16, 17, Fizz, 19, Buzz
+# 1, 2, Fizz, 4, Buzz, 
+# Fizz, 7, 8, Fizz, Buzz,
+# 11, Fizz, 13, 14, Fizz Buzz,
+# 16, 17, Fizz, 19, Buzz
 
 
 
 # QUESTION 6
-def q6(a, b, n):
-    n = n
+def left_riemann(a, b, n):
+    n = abs(n)
     a = a
     b = b
     delta_x = (b - a) / n
@@ -94,5 +97,5 @@ def q6(a, b, n):
         summation += equation
     print(summation)
     
-# q6(-2, 3, 100)
+# left_riemann(-2, 3, 100)
 # 0.9246993659313452
