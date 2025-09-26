@@ -1,6 +1,8 @@
 # MATH 64 HOMEWORK 4
 # Austin Melendez
 
+import numpy as np
+
 # QUESTION 1
 
 #total = 0
@@ -18,6 +20,8 @@ for n in range(1,11):
 print(total)
 # 55
 
+
+
 # QUESTION 2
 modsum = 0
 for n in range(1,20):
@@ -28,6 +32,8 @@ for n in range(1,20):
 
 print(modsum)
 # 64
+
+
 
 
 # QUESTION 3
@@ -45,6 +51,8 @@ def fibonacci(n):
 # fibonacci(20) [Last number printed is:]
 # 6765
 
+
+
 # QUESTION 4
 def ncubed(n):
     ncube = 0
@@ -53,6 +61,8 @@ def ncubed(n):
     print(ncube)
 # ncubed(15)
 # 14400
+
+
 
 # QUESTION 5
 def fizzbuzz(n):
@@ -69,4 +79,20 @@ def fizzbuzz(n):
 # fizzbuzz(20)
 # 1, 2, Fizz, 4, Buzz, Fizz, 7, 8, Fizz, Buzz, 11, Fizz, 13, 14, Fizz Buzz, 16, 17, Fizz, 19, Buzz
 
+
+
 # QUESTION 6
+def q6(a, b, n):
+    n = n
+    a = a
+    b = b
+    delta_x = (b - a) / n
+    summation = 0
+    for i in range(n):
+        xi = a + i * delta_x
+        equation = (1 / (3 + xi ** 4)) * delta_x
+        summation += equation
+    print(summation)
+    
+# q6(-2, 3, 100)
+# 0.9246993659313452
