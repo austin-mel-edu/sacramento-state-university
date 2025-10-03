@@ -1,0 +1,135 @@
+---
+title: "Example 3.2: Hypothesis Tests to Compare Models"
+author: "Lauren Perry"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Full Model
+
+```{r}
+library(faraway)
+data(savings)
+head(savings)
+```
+
+Full model:
+
+```{r}
+mod1 <- lm(sr ~ ., data=savings)
+summary(mod1)
+```
+
+The summary output automatically gives us the results for the test of $H_0: \beta_1=\beta_2=\beta_3=\beta_4=0$
+
+We can also perform this test directly.
+
+```{r}
+tss <- sum((savings$sr - mean(savings$sr))^2)
+tss
+
+rss <- deviance(mod1)
+rss
+
+df.residual(mod1)
+
+fstat <- ((tss-rss)/4) / (rss/df.residual(mod1))
+fstat
+
+1-pf(fstat, 4, df.residual(mod1))
+```
+
+Which we can verify using the output from the `summary` command, above.
+
+## One Predictor
+
+Let's test if $\beta_1=0$.
+
+```{r}
+summary(mod1)
+```
+
+We can also do this using the F-test approach:
+
+```{r}
+mod2 <- lm(sr ~ . -pop15, data=savings) #model with beta1 removed
+
+rss2 <- deviance(mod2)
+# q = p-1, so p-q=1
+fstat <- (deviance(mod2) - deviance(mod1))/(deviance(mod1)/df.residual(mod1))
+
+1-pf(fstat, 1, df.residual(mod1))
+```
+
+The t test statistic is just the square root of the F test statistic:
+
+```{r}
+sqrt(fstat)
+
+tstat <- summary(mod1)$coef[2,3] # t-value from the summary table
+tstat
+2*(1-pt(sqrt(fstat), 45))
+```
+
+### Nested Models
+
+A convenient way to compare nested models in R
+
+```{r}
+anova(mod2, mod1)
+```
+
+### Testing a pair of predictors
+
+It's important to note that we cannot use the t-test outlined above to test multiple predictors *at the same time*! Why?
+
+Instead, we can test multiple predictors jointly using nested models. Both their p-values are high in the full model, so let's test if it makes sense to remove both `pop75` and `dpi`.
+
+```{r}
+mod3 <- lm(sr ~ pop15 + ddpi, savings)
+anova(mod3, mod1)
+```
+
+In this case, the F-test is not significant, so we fail to reject the hypothesis that $\beta_2=\beta_3=0$. We might then move forward with `mod3` as our preferred model. 
+
+## Testing a Subspace
+
+Let's say we want to test whether the effect of old and young people on savings rate is the same: $$H_0: \beta_{pop15}=\beta_{pop75}$$
+
+Then our null model takes the form $$y=\beta_0 +\beta_{dep}(pop15 + pop75)+\beta_{dpi}dpi + \beta_{ddpi}ddpi + \epsilon$$
+
+```{r}
+mod4 <- lm(sr ~ I(pop15+pop75) + dpi + ddpi, data=savings) 
+anova(mod4, mod1)
+```
+
+Note the function `I` forces R to evaluate that sum before it goes into the model.
+
+Since the p-value is 0.21, we fail to reject the null, so it is reasonable to group old and young people together in the context of this model. 
+
+### Testing Fixed Coefficient Values
+
+We can also extend this test to examine whether a specified coefficient can be set to a particular value. $$H_0: \beta_{ddpi}=0.5$$
+
+So the null model is $$y=\beta_0 +\beta_{pop15}pop15 + \beta_{pop75}pop75+\beta_{dpi}dpi + 0.5ddpi + \epsilon$$
+
+A fixed coefficient is called an *offset*
+
+```{r}
+mod5 <- lm(sr ~ pop15 + pop75 + dpi + offset(0.5*ddpi), savings)
+anova(mod4, mod1)
+```
+
+Since our p-value is large, we fail to reject $H_0$. 
+
+We can also test this using a t-statistic $$t = (\hat{\beta}-c)/SE(\hat{\beta})$$ where $c$ is the point hypothesis.
+
+```{r}
+summary(mod1)
+tstat <- (0.4096949 - 0.5)/0.1961971
+2*pt(tstat, 45)
+```
+

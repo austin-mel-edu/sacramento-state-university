@@ -1,0 +1,213 @@
+---
+title: "Example 6.2"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Leverage
+
+```{r}
+library(faraway)
+data(savings)
+mod1 <- lm(sr ~ pop15 + pop75 + dpi + ddpi, savings)
+hatv <- hatvalues(mod1) # leverages
+sum(hatv)
+```
+Sum of leverages = number of parameters (4 + 1 intercept)
+
+### Half-normal plots
+
+1. Sort the data: $x_{[1]} \le x_{[2]} \le \dots \le x_{[n]}$
+2. Compute $u_i = \Phi^{-1}\left(\frac{n+i}{2n+1}\right)$
+3. Plot $x_{[i]}$ against $u_i$
+
+and we look for outliers
+
+```{r}
+countries <- row.names(savings)
+halfnorm(hatv,labs=countries,ylab="Leverages")
+```
+
+### Standardized Residuals
+
+```{r}
+qqnorm(rstandard(mod1))
+abline(0,1)
+# OR #
+plot(mod1, 2)
+```
+
+## Outliers
+
+```{r}
+set.seed(0)
+testdata <- data.frame(x=1:10, y=1:10+rnorm(10))
+mod2 <- lm(y ~ x, testdata)
+plot(testdata)
+```
+
+Here, we add an outlier with low leverage/influence
+
+```{r}
+p1 <- c(5.5, 12)
+mod3 <- lm(y ~ x, rbind(testdata, p1))
+
+plot(y ~ x, rbind(testdata, p1))
+points(5.5,12,pch=4,cex=2)
+abline(mod2) # original model
+abline(mod3, lty=2) # model with outlier
+```
+
+Next, a point well outside the range of X (high leverage)
+
+```{r}
+p2 <- c(15,15.1)
+mod4 <- lm(y ~ x, rbind(testdata, p2))
+plot(y ~ x, rbind(testdata, p2))
+points(15,15.1,pch=4,cex=2)
+abline(mod2)
+abline(mod4,lty=2)
+```
+
+This point is not an outlier, though, and is not influential. 
+
+Finally, a high leverage outlier that is an influential point
+
+```{r}
+p3 <- c(15,5.1)
+mod5 <- lm(y ~ x, rbind(testdata, p3))
+plot(y ~ x, rbind(testdata, p3))
+points(15,5.1,pch=4,cex=2)
+abline(mod2)
+abline(mod5,lty=2)
+```
+
+This time the point has changed the line significantly, and so this point is also influential. 
+
+### Studentized Residuals
+
+```{r}
+stud <- rstudent(mod1) # studentized residuals
+stud[which.max(abs(stud))]
+# unadjusted CV:
+qt(.05/2,44)
+# Bonferroni-corrected CV:
+qt(.05/(50*2),44)
+```
+
+Here, $n=50$ and we want a two-sided test, hence $50*2$.
+
+Since $2.85 < 3.53$, using the Bonferonni correction we are unable to conclude that Zambia is an outlier. 
+
+### Example Dataset
+
+```{r}
+data(star, package="faraway")
+plot(star$temp, star$light, xlab="log(temperature)", ylab="log(light intensity")
+```
+
+The four stars in the upper left corner do not match the pattern (positive, linear) seen in the rest of the data.
+
+```{r}
+lmod <- lm(light ~ temp, star)
+
+plot(star$temp, star$light, xlab="log(temperature)", ylab="log(light intensity")
+abline(lmod)
+```
+
+```{r}
+range(rstudent(lmod))
+```
+
+No outliers, but we clearly have a cluster of weird points. (They're not showing up as outliers precisely *because* they're a cluster.)
+
+It turns out that these stars are gas giants, and perhaps need to be considered separately. Let's try removing them from the model:
+
+```{r}
+lmod2 <- lm(light ~ temp, star, subset=temp>3.6)
+
+plot(star$temp, star$light, xlab="log(temperature)", ylab="log(light intensity")
+abline(lmod)
+abline(lmod2, lty=2)
+```
+
+## Influential Observations
+
+```{r}
+mod1$call
+
+cook <- cooks.distance(mod1)
+halfnorm(cook, 3, labs=countries, ylab="Cook's Distances")
+```
+
+We can also use the `plot` command to get a plot with Cook's distances
+
+```{r}
+plot(mod1, 4)
+```
+
+which identifies the same observations as the halfnormal plot.
+
+Let's try removing the observation with the largest Cook statistic.
+
+```{r}
+mod6 <- lm(sr ~ pop15 + pop75 + dpi + ddpi, savings,
+            subset = cook < max(cook))
+summary(mod6)
+```
+
+Which we can compare to the fit with the full data
+
+```{r}
+summary(mod1)
+```
+
+We see, for example, that `ddpi` coefficient estimate changed by about 50\%, which is a lot for a difference of just one country.
+
+Let's examine the leave-one-out differences for this coefficient.
+
+```{r}
+plot(dfbeta(mod1)[,2], ylab="Change in pop15 coef")
+abline(h=0)
+```
+
+For this next chunk of code, we use the `identify` function to find specific points in a scatter plot. This does not always work in R Markdown, so you may need to copy and paste the entire code chunk into the console.
+
+```{r eval=FALSE}
+plot(dfbeta(mod1)[,2], ylab="Change in pop15 coef")
+abline(h=0)
+identify(dfbeta(mod1)[,2])
+```
+
+In the Plots tab, click on the point of interest, then press esc. The location of the point(s) you clicked on will appear as output in the console. 
+
+```{r}
+savings[23,]
+```
+
+```{r}
+modj <- lm(sr ~ pop15+pop75+dpi+ddpi,savings,
+           subset=(countries != "Japan"))
+summary(modj)
+```
+
+Compared to lmod1, the ddpi term is no longer significant. $R^2$ has also decreased quite a bit. 
+
+We can also use the plot function on a linear model without specifying which plot we want. This will give us a bunch of useful plots all at once.
+
+```{r}
+par(mfrow=c(2,2))
+plot(mod1)
+par(mfrow=c(1,1))
+```
+
+Personally, for diagnostic plots, I prefer
+
+```{r}
+plot(mod1, c(1,2,4))
+```

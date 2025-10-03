@@ -1,0 +1,97 @@
+---
+title: "Example 4"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Confidence Intervals for Predicted Values
+
+```{r}
+library(faraway)
+data("gala")
+
+mod1 <- lm(Species ~ Area + Elevation + Nearest + Scruz + Adjacent, gala)
+```
+
+Suppose we want to predict the number of tortoise species on an island with 
+
+- Area = 0.08
+- Elevation = 93
+- Nearest = 6.0
+- Scruz = 12.0
+- Adjacent = 0.34
+
+```{r}
+x0 <- c(1, 0.08, 93, 6.0,  12.0, 0.34)
+y0 <- sum(x0*coef(mod1))
+y0
+```
+
+Now we can work on our confidence intervals. Suppose we want to make a prediction for a specific island which was not measured in the original data.
+
+First, we will compute the confidence interval (for a mean response)
+
+```{r}
+x <- model.matrix(mod1)
+xtxi <- solve(t(x)%*%x)
+
+summary(mod1)
+sigma <- 60.98
+df <- 24
+```
+
+```{r}
+bm <- as.vector(sqrt(x0 %*% xtxi %*% x0) * qt(0.975, df) * sigma)
+bm
+
+y0 + c(-1,1)*bm
+```
+
+Now let's compute the *prediction* interval (for a specific response)
+
+```{r}
+bm2 <- as.vector(sqrt(1 + x0 %*% xtxi %*% x0) * qt(0.975, df) * sigma)
+bm2
+
+y0 + c(-1,1)*bm2
+```
+
+We can also accomplish this using the `predict` function, but it requires the input to be a data frame that matches that of the original $X$ matrix, so takes a little extra work to set up:
+
+```{r}
+x.new <- data.frame(Area = 0.08, Elevation = 93, Nearest = 6,
+                    Scruz = 12, Adjacent = 0.34)
+predict(mod1, x.new)
+# or we can get more info using
+predict(mod1, x.new, se=TRUE)
+```
+
+We can also use this to generate confidence and prediction intervals
+
+```{r}
+predict(mod1, x.new, interval="confidence")
+
+predict(mod1, x.new, interval="prediction")
+```
+
+We can also generate confidence bands based on varying a specific variable input (and holding everything else constant):
+
+```{r}
+grid <- seq(0, 100, 1)
+p <- predict (mod1, data.frame(Area=0.08, Elevation=93, Nearest=grid, Scruz=12, Adjacent=0.34),
+               se=T, interval="confidence")
+matplot(grid, p$fit, lty=c (1,2,2), type='l', xlab="Nearest",ylab="Species")
+rug(gala$Nearest)
+```
+
+What happens when we predict values outside the range of the original data?
+
+```{r}
+summary(gala$Nearest)
+```
+

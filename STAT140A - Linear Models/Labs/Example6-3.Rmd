@@ -1,0 +1,74 @@
+---
+title: "Example 6.3"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Added Variable Plots
+
+Using the `savings` data, we will construct an added variable plot for `pop15`.
+
+```{r}
+library(faraway)
+data("savings")
+
+d <- residuals(lm(sr ~ pop75 + dpi + ddpi,savings))
+m <- residuals(lm(pop15 ~ pop75 + dpi + ddpi,savings))
+plot(m,d,xlab="pop15 residuals",ylab="Savings residuals")
+```
+
+Let's try adding a regression line to this plot.
+
+```{r}
+coef(lm(d ~ m))
+lmod <- lm(sr ~ pop15+pop75+dpi+ddpi,savings)
+coef(lmod)
+
+plot(m,d,xlab="pop15 residuals",ylab="Savings residuals")
+abline(0,coef(lmod)['pop15'])
+```
+
+## Partial Residual Plots
+
+```{r}
+termplot(lmod, partial.resid=TRUE, terms=1)
+```
+
+Note: this centers $x_i$ so that $\hat{\epsilon}} + \hat{\beta}}_i(x_i - \bar{x}_i)$ have mean zero.
+
+There's some kind of grouping structure here. Let's investigate that a little bit.
+
+```{r}
+mod1 <- lm(sr ~ pop15+pop75+dpi+ddpi,savings,subset=(pop15 > 35))
+mod2 <- lm(sr ~ pop15+pop75+dpi+ddpi,savings,subset=(pop15 < 35))
+summary(mod1)
+summary(mod2)
+```
+
+The model is not significant for `pop15` over 35\%, but is for under 35! 
+
+What's happening here? 
+
+```{r}
+rownames(savings[savings$pop15 > 35,])
+
+rownames(savings[savings$pop15 < 35,])
+```
+
+In general, developing nations tend to have a higher proportion of children than developed nations. (This dataset is from the 1960s, so these may not match up with our expectations in terms of "developing nations".)
+
+### Extra stuff with ggplot2
+
+```{r}
+savings$status <- ifelse(savings$pop15 > 35, "young", "old")
+require(ggplot2)
+ggplot(savings,aes(x=ddpi,y=sr,shape=status))+geom_point()
+ggplot(savings,aes(x=ddpi,y=sr))+geom_point()+facet_grid(~ status)+
+stat_smooth(method="lm")
+```
+

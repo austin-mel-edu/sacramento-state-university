@@ -1,0 +1,162 @@
+---
+title: "Example 6.1"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Constant Variance
+
+```{r}
+library(faraway)
+data(savings)
+mod1 <- lm(sr ~., savings)
+summary(mod1)
+```
+
+### Residuals vs. fitted values
+
+```{r}
+par(mfrow=c(1,2))
+plot(fitted(mod1), residuals(mod1), xlab="Fitted", ylab="Residuals")
+abline(h=0)
+
+plot(fitted(mod1), abs(residuals(mod1)), xlab="Fitted", ylab="|Residuals|")
+par(mfrow=c (1, 1))
+```
+
+Some sample plots
+
+```{r}
+par(mfrow=c(2,2))
+# no issues
+for (i in 1:4) plot (1:50, rnorm (50)); abline(h=0)
+# strong nonconstant variance
+for (i in 1:4) plot (1:50, (1:50)*rnorm(50)); abline(h=0)
+# mild nonconstant variance
+for (i in 1:4) plot (1:50, sqrt ((1:50))*rnorm(50)); abline(h=0)
+# nonlinearity
+for (i in 1:4) plot(1:50, cos ((1:50)*pi/25)+rnorm(50)); abline(h=0)
+par(mfrow=c(1, 1))
+```
+
+Looking at sample plots can help us get a better "feel" for actual problems vs. random variation.
+
+### Transforming the response
+
+```{r}
+data(gala)
+mod2 <- lm(Species ~ Area + Elevation + Scruz + Nearest + Adjacent, gala)
+plot(fitted (mod2), residuals(mod2), xlab="Fitted", ylab="Residuals")
+abline(h=0)
+```
+
+Since these are count data, let's try a square root transformation.
+
+```{r}
+mod3 <- lm(sqrt(Species) ~ Area + Elevation + Scruz + Nearest + Adjacent, gala)
+plot(fitted(mod3), residuals(mod3), xlab="Fitted", ylab="Residuals")
+abline(h=0)
+```
+
+### Box-Cox Transformation
+
+```{r}
+library(sp)
+library(gstat)
+data(meuse)
+names(meuse)
+```
+
+```{r}
+mod4 <- lm(zinc ~ elev + dist, data=meuse)
+plot(fitted(mod4), residuals(mod4), xlab="Fitted", ylab="Residuals")
+abline(h=0)
+```
+
+Run the box-cox optimization
+
+```{r}
+library(MASS)
+bc <- boxcox(mod4)
+```
+
+Get lambda
+
+```{r}
+str(bc)
+lam <- bc$x[which.max(bc$y)]
+lam
+```
+
+Transformation of y
+
+```{r}
+BCTransform <- function(y, lambda=0){
+  if(lambda == 0) log(y)
+  else ((y^lambda - 1) / lambda)
+}
+
+BCTransformInverse <- function(yt, lambda=0){
+  if (lambda == 0) exp(yt)
+  else exp(log(1 + lambda * yt)/lambda)
+}
+
+meuse$yt <- BCTransform(meuse$zinc, lam)
+```
+
+New model with transformed outcome
+
+```{r}
+mod5 <- lm(yt ~ elev + dist, data=meuse)
+summary(mod5)
+```
+
+Compare to original plot
+
+```{r}
+par(mfrow=c(1,2))
+plot(fitted(mod4), residuals(mod4), xlab="Fitted", ylab="Residuals")
+abline(h=0)
+plot(fitted(mod5), residuals(mod5), xlab="Fitted", ylab="Residuals")
+abline(h=0)
+par(mfrow=c(1,1))
+```
+
+```{r}
+plot(mod4, 1)
+```
+
+## Normality of Errors
+
+```{r}
+qqnorm(residuals(mod1), ylab="Residuals", main="")
+qqline(residuals(mod1))
+# OR #
+plot(mod1, 2)
+```
+
+This provides a much more exact means of examining normality than a histogram, which can vary significantly depending on how the bins get set. 
+
+### Examining Problems
+
+```{r}
+par(mfrow=c(2,2))
+n <- 50
+# normal
+for(i in 1:4){x <- rnorm(n); qqnorm(x); qqline(x)}
+# longormal (skewed)
+for(i in 1:4){x <- exp(rnorm(n)); qqnorm(x); qqline(x)}
+# cauchy (long-tailed)
+for(i in 1:4){x <- rcauchy(n); qqnorm(x); qqline(x)}
+# uniform
+for(i in 1:4){x <- runif(n); qqnorm(x); qqline(x)}
+par(mfrow=c(1,1))
+```
+
+Q-Q plots can be hard to use! Sometimes there's obviously a problem, but sometimes it's not clear if we have long-tailed error or just outliers. We can check by removing potential outliers and rerunning the model.
+

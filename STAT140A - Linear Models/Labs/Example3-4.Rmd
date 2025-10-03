@@ -1,0 +1,87 @@
+---
+title: "Example 3.4"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Consider the full model for the savings data.
+
+```{r}
+library(faraway)
+data(savings)
+
+mod1 <- lm(sr ~ ., data=savings)
+sumry1 <- summary(mod1)
+```
+
+### Univariate Confidence Intervals
+
+Let's construct a 95\% CI for $\beta_{pop75}$:
+
+```{r}
+sumry1
+
+est <- mod1$coefficients[3]
+cv <- qt(0.975,45)
+se <- sumry1$coefficients[3,2]
+
+est + c(-1,1)*cv*se
+```
+
+```{r}
+summary(mod1)
+```
+
+We can also, as usual, do this more conveniently:
+
+```{r}
+confint(mod1)
+```
+
+### Joint Confidence Regions
+
+```{r}
+# install.packages("ellipse")
+library(ellipse)
+```
+
+```{r}
+# plot the ellipse for pop15 and pop75
+plot(ellipse(mod1, c(2,3)), type="l", xlim=c(-1,0.5))
+# add origin and point estimates of estimates
+points(0,0)
+points(coef(mod1)[2], coef(mod1)[3], pch=18)
+```
+
+Origin is outside of ellipse, so we can reject $H_0: \beta_{pop15} = \beta_{pop75} = 0$. 
+
+Note that the joint nature of the ellipse means that the univariate CIs are not at all equivalent to what's happening here:
+
+```{r}
+plot(ellipse(mod1, c(2,3)), type="l", xlim=c(-1,0.5))
+# add origin and point estimates of estimates
+points(0,0)
+points(coef(mod1)[2], coef(mod1)[3], pch=18)
+# add one-way CIs to plot
+abline(v=confint(mod1)[2,], lty=2)
+abline(h=confint(mod1)[3,], lty=2)
+```
+
+```{r}
+cor(savings$pop15, savings$pop75)
+```
+
+So the joint test is going to be more meaningful!
+
+```{r}
+summary(mod1, corr=TRUE)$corr
+```
+
+Notice that the correlation between `pop15` and `pop75` is negative, but the correlation between those two predictors is positive. 
+
+Why? They're providing a lot of redundant information, so the more "work" one does, the less the other needs to do. 

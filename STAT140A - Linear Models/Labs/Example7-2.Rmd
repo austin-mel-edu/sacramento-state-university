@@ -1,0 +1,45 @@
+---
+title: "Example 7.2"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Rescaling
+
+```{r}
+data(savings, package="faraway")
+summary(savings)
+```
+
+`dpi` is on a much different scale than the other variables. Let's change it to thousands of dollars.
+
+```{r}
+lmod <- lm(sr ~ pop15+pop75+dpi+ddpi,savings)
+summary(lmod)
+
+lmod2 <- lm(sr ~ pop15+pop75+I(dpi/1000)+ddpi,savings)
+summary(lmod2)
+```
+
+The only change is the rescaling of our coefficient estimate and its associated standard error.
+
+Sometimes we may want to standardize all of our variables to get everything on exactly the same scale.
+Typically we convert to mean 0, standard deviation 1.
+
+```{r}
+head(savings)
+scsav <- data.frame(scale(savings)) 
+lmod3 <- lm(sr ~ ., scsav)
+summary(lmod3)
+
+scsav2 <- data.frame(sr=savings$sr, scale(savings[,-1]))
+lmod4 <- lm(sr ~ ., scsav2)
+summary(lmod4)
+```
+
+Rescaling everything forces the intercept to 0; rescaling only all input variables does not.

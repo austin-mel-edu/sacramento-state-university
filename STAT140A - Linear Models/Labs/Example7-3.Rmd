@@ -1,0 +1,91 @@
+---
+title: "Example 7.3"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Example: Driver Seat Position Preference
+
+```{r}
+data(seatpos, package="faraway")
+lmod <- lm(hipcenter ~ ., seatpos)
+summary(lmod)
+```
+
+Notice that $R^2$ is moderate, but none of the predictors are significant. 
+
+```{r}
+round(cor(seatpos[,-9]),2)
+```
+
+Look for correlations above 0.8 to start getting an idea of where we might have issues.
+
+Now let's look at the eigenvalues. 
+
+```{r}
+x <- model.matrix(lmod)[,-1] # remove intercept
+e <- eigen(t(x) %*% x)
+round(e$val, 2)
+round(sqrt(e$val[1]/e$val), 2)
+```
+
+Wide range and some very large numbers, so problems being caused by more than just one linear combination.
+
+VIF for `age`:
+
+```{r}
+summary(lm(x[,1] ~ x[,-1]))$r.squared
+1/(1-0.49948)
+```
+
+All VIFs:
+
+```{r}
+library(car)
+car::vif(lmod)
+```
+
+(There is also a `vif` function in the `faraway` package, but I don't see any reason to use that version when you are unlikely to return to the textbook package outside of this class.)
+
+Idea: we can interpret $\sqrt(307.4) = 17.5$ as telling us the standard error for height with shoes is 17.5 times larger than it would be without collinearity. That's pretty bad!
+
+We don't have a way to "fix" these variables, but collinearity is essentially telling us that we have redundant information in our predictors -- it makes sense to remove ones that are causing problems!
+
+If we rely on the pairwise correlations to remove variables, we can remove multiple at a time. However, if we rely on VIFs, we should remove one at a time (since that can cause all the other VIF values to shift quite a bit).
+
+All of the variables are pretty highly correlated, but `ht` and `htshoes` are perfectly correlated. Let's start there. We will remove just one of the offending variables.
+
+```{r}
+lmod2 <- lm(hipcenter ~ . - HtShoes, seatpos)
+car::vif(lmod2)
+```
+
+This is looking a lot better, but we still have some major offenders. Let's remove the variable with the next highest VIF. We will repeat this process until all VIF values are under a certain threshold (usually 5 or 10)
+
+```{r}
+lmod3 <- lm(hipcenter ~ . - HtShoes -Ht, seatpos)
+car::vif(lmod3)
+```
+This is adequate, but given what we saw in our correlation matrix, we might consider removing additional variables.
+
+```{r}
+round(cor(seatpos[,-c(3, 4, 9)]),2)
+```
+
+In this case, since all of `HtShoes`, `Ht`, `Seated`, `Arm`, `Thigh`, and `Leg` are reasonably highly correlated with each other, we might just select the easiest one to measure and remove the rest.
+
+```{r}
+lmod4 <- lm(hipcenter ~ Age + Weight + Ht, seatpos)
+
+summary(lmod3)
+summary(lmod4)
+```
+
+The models yield similar information (in terms of R squared), but the latter is more *parsimonious*. The latter model also uses a variable which is easier to measure, which may be appealing. 
+
+If, for some reason, we really want to keep all of the variables in the model (despite collinearity), we can use an alternate technique like ridge regression (which we will discuss in Stat 140B). 
