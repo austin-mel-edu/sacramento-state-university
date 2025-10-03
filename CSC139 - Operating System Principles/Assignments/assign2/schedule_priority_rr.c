@@ -8,7 +8,7 @@
 #include "task.h"
 #include "list.h"
 #include "schedulers.h"
-#include "CPU.h"
+#include "cpu.h"
 
 static struct node *head = NULL;
 static int next_tid = 1;
@@ -90,4 +90,35 @@ void schedule() {
         if (t == NULL) {
             break;
         }
+
+	// Determine time slice: quantum or burst
+	int slice;
+	if (t->burst <= QUANTUM) {
+		slice = t->burst;
+	} else {
+		slice = QUANTUM;
+	}
+
+	// Run the task
+	run(t, slice);
+
+	// Print task info
+	printf(" -> Run %s (priority %d) for %d ms\n", t->name, t->priority, slice);
+
+	// Reduce task burst by slice
+	t->burst -= slice;
+
+	// If task finished remove
+	if (t->burst <= 0){
+		printf("%s finished!\n", t->name);
+		delete(&head, t);
+		free(t->name);
+		free(t);
+	} else {
+	// Task not finished rotate to head for fairness
+		delete(&head, t);
+		insert(&head, t);
+	}
+    }
+}
 

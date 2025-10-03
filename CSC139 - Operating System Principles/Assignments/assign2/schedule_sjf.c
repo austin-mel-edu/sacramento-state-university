@@ -1,7 +1,6 @@
 // CSC 139 SJF Scheduler
 // Austin Melendez
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,7 +8,7 @@
 #include "task.h"
 #include "list.h"
 #include "schedulers.h"
-#include "CPU.h"
+#include "cpu.h"
 
 static struct node *head = NULL;
 static int next_tid = 1;
@@ -77,13 +76,14 @@ void schedule() {
         run(t, slice);
 
         // Print task info
-        printf(" -> ran %s (priority %d) for %d ms\n", t->name, t->priority, slice);
+        printf(" -> Ran %s (priority %d) for %d ms\n", t->name, t->priority, slice);
 
         // Reduce task burst by slice
         t->burst -= slice;
 
         // Task finished remove from list
         if (t->burst <= 0) {
+	    printf("%s compelted!\n", t->name);
             delete(&head, t);
             free(t->name);
             free(t);

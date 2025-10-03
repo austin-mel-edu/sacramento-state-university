@@ -8,7 +8,7 @@
 #include "task.h"
 #include "list.h"
 #include "schedulers.h"
-#include "CPU.h"
+#include "cpu.h"
 
 static struct node *head = NULL;
 static int next_tid = 1;
@@ -70,7 +70,7 @@ static Task *get_tail_task() {
 void schedule() {
 	// Continue until all tasks are executed
 	while (head != NULL) {
-		Task *t = pick_tail_task();
+		Task *t = get_tail_task();
 
 		if (t == NULL) {
 			break;
@@ -83,13 +83,14 @@ void schedule() {
 		run(t, slice);
 
 		// Print task info
-		printf(" -> ran %s (priority %d) for %d ms\n", t->name, t->priority, slice);
+		printf(" -> Ran %s (priority %d) for %d ms\n", t->name, t->priority, slice);
 
 		// Reduce task burst by slice
 		t->burst -= slice;
 
 		// Task finished remove from list
 		if (t->burst <= 0) {
+			printf("%s completed!\n", t->name);
 			delete(&head, t);
 			free(t->name);
 			free(t);

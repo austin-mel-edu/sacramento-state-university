@@ -1,7 +1,6 @@
 // CSC 139 Priority Scheduler
 // Austin Melendez
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,7 +8,7 @@
 #include "task.h"
 #include "list.h"
 #include "schedulers.h"
-#include "CPU.h"
+#include "cpu.h"
 
 static struct node *head = NULL;
 static int next_tid = 1;
@@ -83,6 +82,7 @@ void schedule() {
 
         // Task finished remove from list
         if (t->burst <= 0) {
+	    printf("%s completed!\n", t->name);
             delete(&head, t);
             free(t->name);
             free(t);
