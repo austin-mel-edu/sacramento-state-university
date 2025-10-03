@@ -1,0 +1,156 @@
+---
+title: "hw4"
+author: "Austin Melendez"
+date: "2025-10-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data
+In this homework, we generate data for a linear regression using the following code.
+
+## 1
+Use the following three lines of code to generate data for a linear regression.
+```{r}
+set.seed(0)
+
+x <- 1:100
+y <- 3*x + 7 + rnorm(100, 0, x/5)
+```
+
+### 1(a) 
+Lets generate a linear regression model using `x` to predict `y`.
+```{r}
+mod <- lm(y ~ x)
+```
+
+### 1(b) 
+First, lets examine the plots of the model to check or any glaring problems.
+```{r}
+plot(mod)
+```
+
+The residual vs fitted plot shows that data likely has some problems with heteroscedasticity. This means there is a non-constant variance and variance of residuals increase as `x` increases.
+
+### 1(c) 
+Since we have a problem realted to heteroscedasticity, we can try to transform the response variable to "fix" things. Some common transformations are square, sqaure root, log, and power transformations. You can also attempt a Box-Cox transformation on the data to fix heteroscedasticity.
+
+### 1(d)
+Lets prepared the transformed responses and fit new models with each transformed response variable.
+```{r}
+y_log  <- log(y - min(y) + 1)
+y_sqrt <- sqrt(y - min(y) + 1)
+y_sq   <- (y)^2
+
+mod_log  <- lm(y_log ~ x)
+mod_sqrt <- lm(y_sqrt ~ x)
+mod_sq   <- lm(y_sq ~ x)
+```
+
+Let's check out the diagnostic plots for each now and compare the results of our transformations to figure out which model is now best.
+
+#### Log
+```{r}
+plot(mod_log, main = "Diagnostics: log(y) ~ x")
+```
+
+#### Square Root
+```{r}
+plot(mod_sqrt, main = "Diagnostics: sqrt(y) ~ x")
+
+```
+
+#### Sqaure
+```{r}
+plot(mod_sq, main = "Diagnostics: y^2 ~ x")
+```
+
+$\log y$: compresses the scale for large y and typically reduces the increasing spread of residuals, sp the funnel shape will be significantly reduced, giving more constant variance across fitted values.
+
+$\sqrt y$: reduces spread for large values but does less compression than log, so you will usually see partial improvement (the funnel is reduced but not eliminated). For our example data, the funnel is effectively reduced byt the data is not as tightly packed as log.
+
+$y^2$: worsens our heteroscedasticity because it significantly increases differences and makes larger residuals at high x even bigger.
+
+### 1(e)
+When generating the example data, you purposefully included the heteroscedasticity, which violated the assumption of constant variance of errors.
+
+This was accomplished by making sure the noise in the data was dependant on `x`. 
+
+In the code `rnorm(100, 0, x/5)` sets the standard deviation of the error term to x/5, so as x increases the variance of the errors increases as $(\frac x5)^2$. This creates the heteroscedasticity (non-constant variance).
+
+## 2
+Use the following lines of code to generate data for a multiple linear regression.
+```{r}
+set.seed(0)
+
+x1 <- 1:100
+x2 <- runif(100,1,100)
+x3 <- 0.7*x1 - 4 + rnorm(100)
+y2 <- 3*x1 - x2 + 0.5*x3 + rnorm(100)
+```
+
+### 2(a)
+Let's generate a linear model using `x1`, `x2`, and `x3` to predict `y2`.
+```{r}
+mod2 <- lm(y2 ~ x1 + x2 + x3)
+```
+
+### 2(b) 
+Next, lets examine the plots of the model to check or any glaring problems.
+```{r}
+plot(mod2)
+```
+
+By observing the Q-Q Residuals plot, I can start to see we may have a small underlying problem with our model. Although not severe, our data seems to have two tails on either side of our data. This currently indicates some form of non-linearity. To fix non-linearity, we need to transform our predictor variables. However, lets first investigate further to figuire out how we want to complete that transformation.
+
+Let's check some numerical indicators such as our correlations and VIFs.
+
+First, lets check our the calculated correlation values between our predictor variables.
+```{r}
+cor_mod <- cor(cbind(x1, x2, x3))
+cor_mod
+```
+
+This shows us that there is an extreme correlation between predictor variables `x1` and `x3` since the values are very close to 1. This already tells us that there is likely a multicollinearity problem, but lets calculate the VIFs to confirm.
+```{r}
+#install.packages('car')
+library(car)
+car::vif(mod2)
+```
+
+As expected, our VIF values for `x1` and `x3` are extremely high which indicates severe multicollinerarity.
+
+### 2(c)
+To fix nonlinearity, we have to transform the predictor variables. Let's first get the full model summary so we have a baseline to compare our transformed models too.
+```{r}
+summary(mod2)
+```
+
+Let's first try to remove one of the highly collinear predictors.
+```{r}
+mod2_reduced <- lm(y2 ~ x1 + x2)
+
+summary(mod2_reduced)
+```
+
+This updated model did improve our model, since it increased the F-statistic value.
+
+As an alternative, lets try combining the collinear variables.
+```{r}
+mod2_combine <- lm(y2 ~ x1*x3 + x2)
+
+summary(mod2_combine)
+```
+
+This alternative model performed slightly worse than our orignial model with all three predictor variables independent. As we can see, the significnace of the combined variables in very low. The p-value for the new `x1:x3` variable is $0.85919$ which is terrible.
+
+### 2(d)
+When generating the example data, you purposefully included the multicollinerarity between two variables `x1` and `x3`, which violated the assumption of linerarity.
+
+This was accomplished by making `x3` almost a linear function of `x1`, so that `x3` and `x1` are lineraly dependent. 
+
+In the code `x3 <- 0.7*x1 - 4 + rnorm(100)` is the random noise added that has small variance relatice to the variance of $0.7 \times {x1} - 4$. This creates the multicollinerarity and produces extremely high correlation and very large VIFs.
+
