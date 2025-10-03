@@ -1,40 +1,43 @@
 # CPU Scheduling Metrics Analysis
-## CSC 139 Scheduler Assignment
+## CSC 139 Scehduler Assignemnt
 ### Austin Melendez
-### 10/02/2025
+#### 10/02/2025
+
 
 This report shows the calculations of **Average Turnaround Time (TAT)**, **Waiting Time (WT)**, and **Response Time (RT)** for the five scheduling algorithms: **FCFS, SJF, Round Robin, Priority, and Priority with Round Robin**.
 
 ---
 
-## Equations
+## Definitions
 
 - **Turnaround Time (TAT):**
-\[
+$$ 
 TAT = Completion\ Time - Arrival\ Time
-\]
+$$
 
 - **Waiting Time (WT):**
-\[
+$$
 WT = Turnaround\ Time - Burst\ Time
-\]
+$$
 
 - **Response Time (RT):**
-\[
+$$
 RT = First\ Response\ Time - Arrival\ Time
-\]
+$$
 
 Since all tasks arrive at time 0, formulas simplify to:
 
-\[
+$$
 TAT = Completion\ Time
-\]
-\[
+$$
+
+$$
 WT = TAT - Burst\ Time
-\]
-\[
+$$
+
+$$
 RT = First\ Start\ Time
-\]
+$$
 
 ---
 
@@ -54,15 +57,18 @@ Execution order: T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8
 | T8   | 25    | 170             | 170 | 145| 145|
 
 **Averages:**  
-\[
+
+$$
 \text{Avg TAT} = \frac{20+45+70+85+105+115+145+170}{8} = 95.625
-\]
-\[
+$$
+
+$$
 \text{Avg WT} = \frac{0+20+45+70+85+105+115+145}{8} = 73.125
-\]
-\[
+$$
+
+$$
 \text{Avg RT} = \frac{0+20+45+70+85+105+115+145}{8} = 73.125
-\]
+$$
 
 ---
 
@@ -82,23 +88,24 @@ Execution order: T6 → T4 → T5 → T1 → T8 → T3 → T2 → T7
 | T7   | 30    | 170             | 170 | 140| 140|
 
 **Averages:**  
-\[
+
+$$
 \text{Avg TAT} = \frac{10+25+45+65+90+115+140+170}{8} = 82.5
-\]
-\[
+$$
+
+$$
 \text{Avg WT} = \frac{0+10+25+45+65+90+115+140}{8} = 61.25
-\]
-\[
+$$
+
+$$
 \text{Avg RT} = \frac{0+10+25+45+65+90+115+140}{8} = 61.25
-\]
+$$
 
 ---
 
 ## Round Robin (RR, quantum = 10ms)
 
 Execution order (simplified by quantum): T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8 → T1 …
-
-Completion times are derived after multiple cycles.
 
 | Task | Burst | Completion Time | TAT | WT | RT |
 |------|-------|-----------------|-----|----|----|
@@ -112,15 +119,18 @@ Completion times are derived after multiple cycles.
 | T8   | 25    | 160             | 160 | 135| 70 |
 
 **Averages:**  
-\[
+
+$$
 \text{Avg TAT} = \frac{55+95+115+125+140+145+155+160}{8} = 123.75
-\]
-\[
+$$
+
+$$
 \text{Avg WT} = \frac{45+75+100+105+115+120+125+135}{8} = 102.5
-\]
-\[
+$$
+
+$$
 \text{Avg RT} = \frac{50+0+30+40+10+20+60+70}{8} = 35
-\]
+$$
 
 ---
 
@@ -140,15 +150,18 @@ Execution order: T8 → T5 → T4 → T1 → T7 → T3 → T2 → T6
 | T6   | 10    | 170             | 170 | 160| 160|
 
 **Averages:**  
-\[
+
+$$
 \text{Avg TAT} = \frac{25+45+60+80+110+135+160+170}{8} = 98.125
-\]
-\[
+$$
+
+$$
 \text{Avg WT} = \frac{0+25+45+60+80+110+135+160}{8} = 76.875
-\]
-\[
+$$
+
+$$
 \text{Avg RT} = \frac{0+25+45+60+80+110+135+160}{8} = 76.875
-\]
+$$
 
 ---
 
@@ -168,15 +181,18 @@ Execution order: Highest priority first; ties resolved with Round Robin.
 | T6   | 10    | 125             | 125 | 115| 115|
 
 **Averages:**  
-\[
+
+$$
 \text{Avg TAT} = \frac{25+40+50+70+95+105+115+125}{8} = 78.125
-\]
-\[
+$$
+
+$$
 \text{Avg WT} = \frac{0+25+30+50+70+80+85+115}{8} = 56.875
-\]
-\[
+$$
+
+$$
 \text{Avg RT} = \frac{0+25+35+45+55+65+75+115}{8} = 52.5
-\]
+$$
 
 ---
 
