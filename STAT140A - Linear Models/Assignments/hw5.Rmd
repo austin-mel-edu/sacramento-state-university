@@ -1,0 +1,270 @@
+---
+title: "hw5"
+author: "Austin Melendez"
+date: "2025-10-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### The following was completed for the STAT 140A - Homework 5 assignment.
+
+# Homework 5
+
+## Using the sat dataset, fit a model with the total SAT score as the response and expend, salary, ratio and takers as predictors. 
+
+### 6.1) Perform regression diagnostics on this model to answer the following questions. Display any plots that are relevant.
+
+```{r}
+#install.packages("faraway")
+library(faraway)
+
+data(sat)
+
+model <- lm(total ~ expend + salary + ratio + takers, data = sat)
+
+summary(model)
+```
+
+#### A) Lets check our model assumptions to verify the model is useful. First, let's check the constant variance assumption, we'll test for homoscedasticity.
+
+```{r}
+plot(model, which = 1)
+
+plot(model, which = 3)
+```
+
+The data shows some possible mild heteroscedasticity, but not a large influence. The residuals vs fitted graph shows some points we may want to investigate further such as `West Virginia`, `North Dakota`, and `New Hampshire`.
+
+#### B) Next lets check the normality assumption.
+
+```{r}
+plot(model, which = 2)
+```
+
+Looking at the Q-Q plot, some the majority of our data is on the line. However, it could be argued the the extreme ends of the data ends with tailing values. Based on this graph, `West virginia` is definitely a point to investigate further.
+
+#### C) Lets take a closer look at some high leverage points.
+
+```{r}
+hatv <- hatvalues(model)
+
+print(hatv)
+
+sum(hatv)
+```
+
+Two high leverage points that I can identify on on this graph are `California` and `Utah`.
+
+#### D) Let's check for outliers!
+
+```{r}
+
+plot(model, which = 4)
+
+which(abs(rstandard(model)) > 2)
+```
+
+This shows us that there are four states that exceed $\pm2$ standard deviations. These four states are `New Hampshire`, `North Dakota`, `Utah`, and `West Virginia`.
+
+#### E) Influential points?
+
+```{r}
+states <- row.names(sat)
+
+cook <- cooks.distance(model)
+
+halfnorm(cook,3,labs=states,ylab="Cook’s distances")
+```
+
+`West Virginia`, `New Hampshire`, and `Utah` have high cook's distances with high half-normal quantiles. So let's remove the highest value, `Utah`, from the model to see if the model improves.
+
+#### F) Model Structure?
+
+```{r}
+model_reduced <- lm(total ~ expend + salary + ratio + takers, 
+                    data = subset(sat, rownames(sat) != "Utah"))
+
+summary(model_reduced)
+```
+
+### 6.2) sing the teengamb dataset answer the following questions.
+
+```{r}
+data(teengamb)
+
+model2 <- lm(gamble ~ sex + status + income + verbal, data = teengamb)
+
+summary(model2)
+```
+
+#### A) Lets check our model assumptions to verify the model is useful. First, let's check the constant variance assumption, we'll test for homoscedasticity.
+
+```{r}
+plot(model2, which = 1)
+
+plot(model2, which = 3)
+```
+
+The data definitely shows heteroscedasticity and possibly non-linearity. The residuals vs fitted graph shows an obvious cone of points that increases distances as you go through the data.
+
+#### B) Next lets check the normality assumption.
+
+```{r}
+plot(model2, which = 2)
+```
+
+Looking at the Q-Q plot, some the majority of our data is on the line. However, the the extreme ends of the data ends with tailing values. Based on this graph, points `24`, `36`, and `39` are definitely points to investigate further.
+
+#### C) Lets take a closer look at some high leverage points.
+
+```{r}
+hatv2 <- hatvalues(model2)
+
+print(hatv2)
+
+sum(hatv2)
+```
+
+Two high leverage points that I can identify on on this graph are `24` and `39`.
+
+#### D) Let's check for outliers!
+
+```{r}
+
+plot(model2, which = 4)
+
+which(abs(rstandard(model2)) > 2)
+```
+
+This shows us that there are three points that exceed $\pm2$ standard deviations. These three points are `24`, `36`, and `39`.
+
+#### E) Influential points?
+
+```{r}
+index <- row.names(teengamb)
+
+cook2 <- cooks.distance(model2)
+
+halfnorm(cook,3,labs=index,ylab="Cook’s distances")
+```
+
+`24` and `39` have high cook's distances with high half-normal quantiles. So let's remove the highest value, `24`, from the model to see if the model improves.
+
+#### F) Model Structure?
+
+```{r}
+model_reduced2 <- lm(gamble ~ sex + status + income + verbal, data = subset(teengamb, rownames(teengamb) != "24"))
+
+summary(model_reduced2)
+```
+
+### 7.3) Using the divusa data:
+
+#### A) it a regression model with divorce as the response and unemployed, femlab, marriage, birth and military as predictors.
+
+```{r}
+data(divusa)
+
+model3 <- lm(divorce ~ unemployed + femlab + marriage + birth + military, data = divusa)
+summary(model3)
+
+kappa(model3, exact = TRUE)
+```
+
+A high condition number indicates that some predictors are highly linearly related coefficients may be unstable and standard errors inflated.
+
+#### B) Compute VIFs
+
+```{r}
+vif(model3)
+```
+
+The VIF's show us there is low multicollinerarity.
+
+#### C) Remove insignificant predictors and check collinerarity.
+
+```{r}
+model3_reduced <- lm(divorce ~ unemployed + femlab + marriage, data = divusa)
+
+summary(model3_reduced)
+
+vif(model3_reduced)
+
+kappa(model3_reduced, exact = TRUE)
+```
+
+The VIF's have decreased so the collinearity has be en reduced.
+
+### 9.2) he cornnit data on the relationship between corn `yield` (bushels per acre) and `nitrogen` (pounds per acre) fertilizer application.
+
+```{r}
+data(cornnit)
+
+model4 <- lm(yield ~ nitrogen, data = cornnit)
+
+summary(model4)
+
+plot(model4, which = 1)
+```
+
+This shows a slight non-linear pattern that we will have to investigate further.
+
+Let's try some different common transformations.
+
+```{r}
+model_log <- lm(log(yield) ~ nitrogen, data=cornnit)
+plot(model_log$fitted.values, resid(model_log))
+
+abline(h=0, lty=2)
+
+model_sqrt <- lm(sqrt(yield) ~ nitrogen, data=cornnit)
+
+model_quad <- lm(yield ~ nitrogen + I(nitrogen^2), data=cornnit)
+
+summary(model_quad)
+```
+
+Let's compare the goodness of fit for our transformed models.
+
+```{r}
+anova(model4, model_quad)
+summary(model_quad)
+```
+Lastly, lets do a Box-Cox to automatically find the optimal transformation.
+
+```{r}
+library(MASS)
+boxcox(model4, lambda = seq(-2, 2, 0.1))
+```
+
+Box-Cox suggests a lambda of $\lambda \ 1$ which suggests using a log transformation.
+
+### 9.3 Using the ozone data, fit a model with `O3` as the response and `temp`, `humidity` and `ibh` as predictors. Use the Box–Cox method to determine the best transformation on the response.
+
+```{r}
+data(ozone)
+
+model_oz <- lm(O3 ~ temp + humidity + ibh, data=ozone)
+
+summary(model_oz)
+
+plot(model_oz, which = 1)
+```
+
+The residuals vs fitted plot indicates non-constant variance, we will need to transform this data to fix it.
+
+```{r}
+boxcox(model_oz, lambda = seq(-2, 2, 0.1))
+```
+
+Box-Cox suggests a lambda of $\lambda \approx 0$ which suggests using a log transformation.
+
+```{r}
+model_oz_log <- lm(log(O3) ~ temp + humidity + ibh, data=ozone)
+
+summary(model_oz_log)
+```
+
