@@ -1,0 +1,226 @@
+---
+title: "hw6"
+author: "Austin Melendez"
+date: "2025-10-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1
+Use the following three lines of code to generate data for a linear regression.
+```{r}
+library(tidyverse)
+library(faraway)
+data(infmort)
+
+summary(infmort)
+
+mod <- lm(mortality ~ ., data=infmort)
+summary(mod)
+```
+From this model using all other predictor values to predict `mortality`, all of our predictors are statistically significant besides `income`. However, our $R^2$ value is very low, 0.3105, which means it is only capturing ~31% of the data. Lets see if we can make that better.
+
+Lets use AIC to optimize the model complexity vs significance.
+
+```{r}
+mod_step <- step(mod, k=2)
+summary(mod_step)
+```
+
+The AIC slightly lowers when removing the `income` estimator. Let's check the Box-Cox plot to verify our model assumptions.
+
+```{r}
+library(MASS)
+bc <- boxcox(mod_step, plotit=TRUE)
+```
+
+Since the Box-Cox suggests lambda ~ 0, so we transform the response variable accordingly with a log transformation.
+```{r}
+mod_trans <- lm(log(mortality) ~ region + oil, data=infmort)
+summary(mod_trans)
+```
+THis has almost doubled our $R^2$ value. Next, lets check for influential points.
+
+```{r}
+plot(mod_step, 2)
+
+plot(mod_step, 4)
+
+cooks <- cooks.distance(mod_step)
+```
+Based on our Q-Q plot I would like to investiage `Saudi_Arabia` and `Afganistan` as they have significantly higher residuals. We can see on our Residuals vs Leverage plot that `Saudi_Arabia` is definitely a high influential point that needs to be address as it is inside the Cook's distance dashed arc.
+
+Let's see which points have high leverage.
+
+```{r}
+hat <- hatvalues(mod_step)
+which(hat > 2*mean(hat))
+```
+Let's refit our model without the highly influential point, `Saudi Arabia`.
+
+```{r}
+infmort2 <- subset(infmort, row.names(infmort) != "Saudi_Arabia")
+mod_reduced <- lm(log(mortality) ~ region + oil, data = infmort2)
+
+summary(mod_reduced)
+```
+
+This is our final model.
+
+## 2
+Let's first convert the predictor variable `side` to factor.
+```{r}
+data(chredlin)
+summary(chredlin)
+
+```
+Let's fit a model with side as a factor and fit the model with interactor to allow the slope to vary by side.
+
+```{r}
+mod_side <- lm(race ~ fire + theft + age + involact + income + side, 
+               data = chredlin)
+summary(mod_side)
+
+mod_side_int <- lm(race ~ (fire + theft + age + involact + income) * side, 
+                   data = chredlin)
+summary(mod_side_int)
+```
+
+Now let's compare these two models.
+
+```{r}
+anova(mod_side, mod_side_int)
+
+plot(mod_side_int)
+```
+
+## 6 
+### A)
+```{r}
+data(clot)
+summary(clot)
+
+clot$lot <- factor(clot$lot)  # ensure factor
+plot(clot$conc, clot$time, pch=ifelse(clot$lot==levels(clot$lot)[1],1,2),
+     xlab="conc (%)", ylab="time")
+legend("topright", legend=levels(clot$lot), pch=1:2)
+
+```
+### B) 
+Let's check out our response and predictor varibales to see if we need to perfrom any transformations.
+
+```{r}
+mod <- lm(time ~ conc * lot, data = clot)
+boxcox(mod, plotit = TRUE)
+```
+
+As we can see in our Box-Cox plot, the $\lambda$ value is around $-1.5$. 
+### C)
+This means we should do a log log transformation on our response variable. 
+
+```{r}
+mod_loglog <- lm(log(time) ~ log(conc) * lot, data = clot)
+summary(mod_loglog)
+```
+
+Let's also compare our models using an ANOVA table.
+
+```{r}
+anova(lm(log(time) ~ log(conc) + lot, data=clot), mod_loglog)
+```
+### D)
+
+```{r}
+shapiro.test(resid(mod_loglog))
+plot(fitted(mod_loglog), resid(mod_loglog)); abline(h=0)
+```
+
+## 8
+### A
+```{r}
+data(hips)
+summary(hips)
+
+plot(hips$fbef, hips$fafter, pch=ifelse(hips$grp=="control",1,2),
+     xlab="flexion before", ylab="flexion after")
+legend("bottomright", legend=c("control","treat"), pch=1:2)
+```
+
+### B)
+```{r}
+mod_ancova <- lm(faft ~ fbef + grp, data = hips)
+summary(mod_ancova)
+anova(mod_ancova)
+```
+
+Let;s check if the slopes are different by treatment (`grp`). 
+```{r}
+mod_anc_int <- lm(faft ~ fbef * grp, data = hips)
+anova(mod_ancova, mod_anc_int)
+```
+
+### C)
+```{r}
+hips$diff <- hips$faft - hips$fbef
+boxplot(diff ~ grp, data = hips)
+
+t.test(diff ~ grp, data = hips, var.equal = FALSE)
+```
+
+ANCOVA adjusts `fafter` for baseline and typically has better power if baseline correlates with outcome. While the difference approach directly tests change.
+
+### D)
+Let's check for out highly influential points.
+
+```{r}
+which(hips$fbef < 90)
+
+plot(mod_ancova, 2)
+plot(mod_ancova, 4)
+```
+
+We see points `49` and `50` are both very high Cook's distance and high leverage. Let see which other points are considered high.
+
+```{r}
+cooks <- cooks.distance(mod_ancova)
+which(cooks > 4/length(cooks))
+```
+
+So, let's remove the outliers that are high leverage and highly influential and refit our model.
+
+```{r}
+hips2 <- hips[-c(49, 50), ]
+
+mod_trim <- lm(faft ~ fbef + grp, data = hips2)
+summary(mod_trim)
+```
+
+### E)
+
+```{r}
+confint(mod_trim)["grptreat",]
+```
+
+### G)
+
+```{r}
+hips_avg <- hips %>%
+  group_by(person, grp) %>%
+  summarize(
+    fbef_mean = mean(fbef),
+    faft_mean = mean(faft),
+    diff_mean = mean(diff),
+    .groups = "drop"
+  )
+
+mod_avg <- lm(faft_mean ~ fbef_mean + grp, data = hips_avg)
+
+summary(mod_avg)
+confint(mod_avg)
+```
+
+
+
