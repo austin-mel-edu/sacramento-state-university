@@ -1,0 +1,210 @@
+---
+title: "hw7"
+author: "Austin Melendez"
+date: "2025-10-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1
+Use the `prostate` data wiht `lspa` as the response and other variables as predictors. Determine the "best" model:
+
+```{r}
+#install.packages("faraway")
+library(faraway)
+data(prostate)
+head(prostate)
+
+full_mod <- lm(lpsa ~ ., data = prostate)
+summary(full_mod)
+```
+
+### A
+#### Backward eliminination
+
+```{r}
+back_mod <- step(full_mod, direction = "backward")
+summary(back_mod)
+```
+
+According to the backward elimination, the strongest predictors of `lspa` are `lcavol`, `lweight`, `svi`, and `lbph`.
+
+### B
+#### AIC Selection
+
+```{r}
+library(MASS)
+aic_mod <- stepAIC(full_mod, direction = "both")
+summary(aic_mod)
+```
+
+According to the AIC selection process, the strongest predictors of `lspa` are `lcavol`, `lweight`, `lbph`, and `svi`.
+
+### C
+#### Adjusted R^2
+
+```{r}
+#install.packages("leaps") 
+require(leaps)
+adjr2_fit <- regsubsets(lpsa ~ ., data = prostate)
+adjr2_sum <- summary(adjr2_fit)
+
+adjr2_sum$which[which.max(adjr2_sum$adjr2), ]
+```
+The model with the highest adjusted $ R^2 $ uses the predictors of `lcavol`, `lweight`, `age`, `lbph`, `svi`, `lcp`, and `pgg45`.
+
+### D
+#### Mallows Cp
+
+```{r}
+cp <- adjr2_sum$cp
+p <- 1:length(cp)
+adjr2_sum$which[which.min(abs(cp - p)), ]
+```
+Mallow's Cp confirms best model uses the predictors of `lcavol`, `lweight`, `lbph`, `svi`, `lcp`, and `pgg45`.
+
+## 2
+Use `gamble` as the response and determine the best subset of predictors.
+
+```{r}
+library(faraway)
+data(teengamb)
+head(teengamb)
+
+full_tg <- lm(gamble ~ ., data = teengamb)
+summary(full_tg)
+```
+
+### A
+#### Backward Elimination
+
+```{r}
+backward_tg <- step(full_tg, direction = "backward")
+summary(backward_tg)
+```
+
+Backward elimination shows that the best mnodel uses the predictors of `sex`, `income`, and `verbal`.
+
+### B
+#### AIC
+
+```{r}
+library(MASS)
+aic_tg <- stepAIC(full_tg, direction = "both")
+summary(aic_tg)
+```
+AIC shows that the best mnodel uses the predictors of `sex`, `income`, and `verbal`.
+
+### C
+#### Adjusted R^2
+
+```{r}
+require(leaps)
+adjr2_tg <- regsubsets(gamble ~ ., data = teengamb)
+adjr2_sum_tg <- summary(adjr2_tg)
+which.max(adjr2_sum_tg$adjr2)
+adjr2_sum_tg$which[which.max(adjr2_sum_tg$adjr2), ]
+```
+Adjusted $ R^2 $ shows the best model uses the predictors of `sex`, `income`, and `verbal`.
+
+### D
+#### Mallows Cp
+
+```{r}
+cp_tg <- adjr2_sum_tg$cp
+p_tg <- 1:length(cp_tg)
+adjr2_sum_tg$which[which.min(abs(cp_tg - p_tg)), ]
+```
+Mallows Cp shows the same best model uses the predictors of `sex`, `income`, and `verbal`.
+
+## 1
+Determine whether there are any differences between the operators in the `pulp` dataset.
+
+```{r}
+data(pulp)
+head(pulp)
+
+lm_pulp <- lm(bright ~ operator, data = pulp)
+anova(lm_pulp)
+summary(lm_pulp)
+```
+```{r}
+plot(lm_pulp)
+```
+After viewing the plots, the variance seems to be constant among groups, and the Q-Q plot looks fine.
+
+```{r}
+TukeyHSD(aov(lm_pulp))
+```
+Looking at our table of values, we only have one significant difference and one difference that is borderline significant at best.
+
+Operator D produces significantly higher mean brightness than operator B.
+
+The other pairwise differences are not significant, suggesting only slight operator effects on brightness levels.
+
+## 2
+Determine whether there are any differences between the operators in the `chickwts` dataset.
+
+```{r}
+data(chickwts)
+lm_chick <- lm(weight ~ feed, data = chickwts)
+anova(lm_chick)
+summary(lm_chick)
+```
+
+```{r}
+plot(lm_chick)
+```
+After viewing the plots, the variance seems to be constant among groups, and the Q-Q plot looks fine.
+
+```{r}
+TukeyHSD(aov(lm_chick))
+```
+Looking at our table of values, we have a few significant differences. We notice a difference in `horsebean` and `casein`, `linseed` and `casin`, `soybean` and `casein`, `meatmeal` and `horsebean`, `soybean` and `horsebean`, `sunflower` and `linseed`, and lastly `sunflower` and `soybean`.
+
+The other pairwise differences are not significant, however the amount of significant differences suggests significant differences in mean chick weights based on feed type. 
+
+`Casein` feed produces significantly heavier chicks than `horsebean`, `linseed`, and `soybean` feeds.
+
+`Horsebean` feed has the lowest average weight among all feed types.
+
+`Sunflower` feed produces the highest mean weight.
+
+## 3
+Determine whether there are any differences between the operators in the `plantgrowth` dataset.
+
+```{r}
+data(PlantGrowth)
+lm_pg <- lm(weight ~ group, data = PlantGrowth)
+anova(lm_pg)
+summary(lm_pg)
+```
+
+```{r}
+plot(lm_pg)
+```
+After viewing the plots, the variance seems to be constant among groups, and the Q-Q plot looks fine.
+
+```{r}
+TukeyHSD(aov(lm_pg))
+```
+Looking at our table of values, we notice the only significant difference is between `trt2` and `trt1`.
+
+No significant difference between the control and either treatment individually. However, `trt2` has a significantly higher mean plant weight than `trt1`.
+
+```{r}
+contrasts(PlantGrowth$group) <- matrix(c(
+  -2,  0,   # ctrl
+   1,  1,   # trt1
+   1, -1    # trt2
+), ncol = 2)
+
+lm_pg2 <- lm(weight ~ group, data = PlantGrowth)
+summary(lm_pg2)
+```
+`trt2` plants are about 0.53 units lighter than `ctrl`.
+
+There are significant differences in mean plant weight between the three treatment groups.
