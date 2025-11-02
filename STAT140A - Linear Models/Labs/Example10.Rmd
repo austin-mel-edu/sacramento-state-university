@@ -1,0 +1,356 @@
+---
+title: "Model Selection"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(faraway)
+```
+
+***
+
+Goal: select the ``best`` subset of predictors for a regression model. 
+
+- Want to select *parsimonious* models
+    - Balance between informativeness and complexity.
+    
+# Testing-Based Procedures
+=
+## Backward Elimination 
+
+1. Start with all predictors in the model. 
+2. Remove the predictor with the highest p-value greater than $\alpha$.
+3. Refit the model with the remaining predictors.
+4. Repeat steps 2 and 3 until all p-values are less than $\alpha$. 
+
+## Forward Selection
+
+1. Start with no variables in the model.
+2. For all predictors not in the model, check their p-values if they are added to the model.
+3. Choose the predictor with the smallest p-value less than $\alpha$ and add it to the model. 
+4. Repeat steps 2 and 3 until no new predictors can be added.
+
+## Stepwise Regression
+
+- This describes any combination of backward elimination and forward selection.
+- At any stage, a variable may be added or removed from the model based on p-values. 
+
+## Example: Backward Elimination 
+
+```{r echo=TRUE, results='hide'}
+data(state)
+statedata <- data.frame(state.x77,row.names=state.abb)
+lmod <- lm(Life.Exp ~ ., statedata)
+summary(lmod)
+```
+```
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  7.094e+01  1.748e+00  40.586  < 2e-16 ***
+Population   5.180e-05  2.919e-05   1.775   0.0832 .  
+Income      -2.180e-05  2.444e-04  -0.089   0.9293    
+Illiteracy   3.382e-02  3.663e-01   0.092   0.9269    
+Murder      -3.011e-01  4.662e-02  -6.459 8.68e-08 ***
+HS.Grad      4.893e-02  2.332e-02   2.098   0.0420 *  
+Frost       -5.735e-03  3.143e-03  -1.825   0.0752 .  
+Area        -7.383e-08  1.668e-06  -0.044   0.9649    
+---
+Multiple R-squared:  0.7362,	Adjusted R-squared:  0.6922 
+F-statistic: 16.74 on 7 and 42 DF,  p-value: 2.534e-10
+```
+
+## Example: Backward Elimination
+
+```{r echo=TRUE, results='hide'}
+lmod <- update(lmod, . ~ . - Area)
+summary(lmod)
+```
+
+```
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  7.099e+01  1.387e+00  51.165  < 2e-16 ***
+Population   5.188e-05  2.879e-05   1.802   0.0785 .  
+Income      -2.444e-05  2.343e-04  -0.104   0.9174    
+Illiteracy   2.846e-02  3.416e-01   0.083   0.9340    
+Murder      -3.018e-01  4.334e-02  -6.963 1.45e-08 ***
+HS.Grad      4.847e-02  2.067e-02   2.345   0.0237 *  
+Frost       -5.776e-03  2.970e-03  -1.945   0.0584 .  
+```
+
+## Example: Backward Elimination 
+
+```{r echo=TRUE, results='hide'}
+lmod <- update(lmod, . ~ . - Illiteracy)
+summary(lmod)
+```
+
+```
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  7.107e+01  1.029e+00  69.067  < 2e-16 ***
+Population   5.115e-05  2.709e-05   1.888   0.0657 .  
+Income      -2.477e-05  2.316e-04  -0.107   0.9153    
+Murder      -3.000e-01  3.704e-02  -8.099 2.91e-10 ***
+HS.Grad      4.776e-02  1.859e-02   2.569   0.0137 *  
+Frost       -5.910e-03  2.468e-03  -2.395   0.0210 * 
+```
+
+## Example: Backward Elimination
+
+```{r echo=TRUE, results='hide'}
+lmod <- update(lmod, . ~ . - Income)
+summary(lmod)
+```
+
+```
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  7.103e+01  9.529e-01  74.542  < 2e-16 ***
+Population   5.014e-05  2.512e-05   1.996  0.05201 .  
+Murder      -3.001e-01  3.661e-02  -8.199 1.77e-10 ***
+HS.Grad      4.658e-02  1.483e-02   3.142  0.00297 ** 
+Frost       -5.943e-03  2.421e-03  -2.455  0.01802 * 
+```
+
+## Example: Backward Elimination
+
+```{r echo=TRUE, results='hide'}
+lmod <- update(lmod, . ~ . - Population)
+summary(lmod)
+```
+
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 71.036379   0.983262  72.246  < 2e-16 ***
+Murder      -0.283065   0.036731  -7.706 8.04e-10 ***
+HS.Grad      0.049949   0.015201   3.286  0.00195 ** 
+Frost       -0.006912   0.002447  -2.824  0.00699 ** 
+---
+
+Residual standard error: 0.7427 on 46 degrees of freedom
+Multiple R-squared:  0.7127,	Adjusted R-squared:  0.6939 
+F-statistic: 38.03 on 3 and 46 DF,  p-value: 1.634e-12
+```
+
+## Example: Backward Elimination
+
+- Whether to remove `Population` is a close call as it is borderline.
+- The $R^2$ value has changed only slightly, from $0.736$ to $0.713$.
+
+## Problems with Stepwise Regression
+
+1. No guarantee that we get the "best" possible subset of predictors.
+2. Multiple testing.
+    - Removing less significant predictors tends to increase the significance of those remaining.
+    - May overstate actual significance of remaining predictors.
+3. Procedure not directly linked to prediction or explanation, so may not be very helpful in our primary goal. 
+4. Tends to pick models that are smaller than is ideal for prediction purposes. 
+
+# Criterion-Based Procedures
+
+## Criterion-Based Procedures
+
+Idea: 
+
+- Create some measure of how well a model meets some given purpose. 
+- Select a model that best optimizes that criterion.
+
+***
+
+Natural to pick a model, $g$, parameterized by $\theta$, which is close to the true model $f$.
+
+We can measure that distance using
+
+$$I(f,g) = \int f(x)\log\left(\frac{f(x)}{g(x|\theta)}\right)dx$$
+
+known as the *Kullback-Leibler information*. 
+
+*** 
+
+Since $f$ is unknown, we use the MLE of $\theta$
+
+$$\hat{I}(f,g) = \int f(x)\log f(x)dx - \int f(x)\log g(x|\hat{\theta})dx$$
+
+and we can ignore the first term since it doesn't depend on the model chosen.
+
+## Akaike Information Criterion
+
+$$AIC = -2\log L(\hat{\theta}) + 2p$$
+
+where $p$ is the number of parameters in the model.
+
+- Since this includes both model fit (likelihood) and complexity (number of parameters), it is a good measure for model parsimony.
+    - $2p$ is considered a *penalty term*. 
+- For linear regression, $$-2\log L(\hat{\theta}) = n\log(RSS/n) + \text{constant}$$
+- We choose the model which minimized AIC. 
+
+## Bayesian Informaton Criterion
+
+$$BIC = -2\log L(\hat{\theta}) + p\log n$$
+
+- Penalizes larger models more heavily than AIC does
+- AIC usually preferred when prediction is primarly goal
+
+## Example: AIC
+
+```{r echo=TRUE}
+require(leaps)
+b <- regsubsets(Life.Exp~.,data=statedata)
+rs <- summary(b)
+rs$which
+```
+
+## Example: AIC
+
+- The `regsubsets` function in the `leaps` package runs all possible combinations of the predictors.
+- For each model size $p$, it finds the variables that produce the minimum RSS.
+
+## Example: AIC
+
+```{r}
+rs$rss
+AIC <- 50*log(rs$rss/50) + (2:8)*2
+plot(AIC ~ I(1:7), ylab="AIC", xlab="Number of Predictors")
+```
+
+## Adjusted R-Squared
+
+This is another commonly used criterion.
+
+- As we increase $p$, $R^2$ is strictly non-decreasing. $$R^2 = 1 - \frac{\text{RSS}}{\text{TSS}}$$
+- So $R^2$ is not an appropriate metric for model comparison. 
+    
+## Adjusted R-Squared
+    
+$$R^2_a =  1-\frac{\text{RSS}/(n-p)}{\text{TSS}/(n-1)} = 1-\left(\frac{n-1}{n-p}\right)(1-R^2)$$
+
+- Adding a predictor will only increase $R^2_a$ if it has adequate predictive value.
+- AIC and BIC can be used for any modelling approach, $R^2_a$ is specific to linear regression. 
+
+## Example: Adjusted R-Squared
+
+```{r}
+rs$adjr2
+plot(2:8,rs$adjr2,xlab="No. of Parameters",ylab="Adjusted R-square")
+```
+
+## Mallow's $C_p$
+
+A good model should predict well, so we might examine the average MSE of prediction:
+
+$$\frac{1}{\sigma^2}\sum_i E(\hat{y}_i - Ey_i)^2$$
+
+which we can estimate using Mallow's $C_p$:
+
+$$C_p = \frac{RSS_p}{\hat{\sigma}^2} + 2p - n$$
+
+where $\hat{\sigma}^2$ is estimated from the model with all predictors and $RSS_p$ is the RSS from a model with $p$ parameters. 
+
+## Mallow's $C_p$
+
+- For the full model, $C_p = p$.
+- If a $p$ predictor model fits, then $E(RSS) = (n-p)\sigma^2$ and $E(C_p) \approx p$.
+- A model with a bad fit will have $C_p >> p$.
+
+## Example: Mallow's $C_p$
+
+```{r}
+plot(2:8,rs$cp,xlab="No. of Parameters",ylab="Cp Statistic")
+abline(0,1)
+```
+
+Models on or below the $C_p = p$ line are good fits. 
+
+## Models with Many Predictors
+
+- If there are $q$ potential predictors, there are $2^q$ possible models. 
+- May not be practical to fit all possible models.
+- The `step` function uses a search method to evaluate models sequentially using AIC
+
+## Models with Many Predictors
+
+```{r echo=TRUE, results='hide'}
+lmod <- lm(Life.Exp ~ ., data=statedata)
+step(lmod)
+```
+
+```
+Start:  AIC=-22.18
+Life.Exp ~ Population + Income + Illiteracy + Murder + HS.Grad + 
+    Frost + Area
+
+             Df Sum of Sq    RSS     AIC
+- Area        1    0.0011 23.298 -24.182
+- Income      1    0.0044 23.302 -24.175
+- Illiteracy  1    0.0047 23.302 -24.174
+<none>                    23.297 -22.185
+- Population  1    1.7472 25.044 -20.569
+- Frost       1    1.8466 25.144 -20.371
+- HS.Grad     1    2.4413 25.738 -19.202
+- Murder      1   23.1411 46.438  10.305
+```
+
+*** 
+
+```
+Step:  AIC=-24.18
+Life.Exp ~ Population + Income + Illiteracy + Murder + HS.Grad + 
+    Frost
+
+             Df Sum of Sq    RSS     AIC
+- Illiteracy  1    0.0038 23.302 -26.174
+- Income      1    0.0059 23.304 -26.170
+<none>                    23.298 -24.182
+- Population  1    1.7599 25.058 -22.541
+- Frost       1    2.0488 25.347 -21.968
+- HS.Grad     1    2.9804 26.279 -20.163
+- Murder      1   26.2721 49.570  11.569
+```
+
+***
+
+```
+Step:  AIC=-26.17
+Life.Exp ~ Population + Income + Murder + HS.Grad + Frost
+
+             Df Sum of Sq    RSS     AIC
+- Income      1     0.006 23.308 -28.161
+<none>                    23.302 -26.174
+- Population  1     1.887 25.189 -24.280
+- Frost       1     3.037 26.339 -22.048
+- HS.Grad     1     3.495 26.797 -21.187
+- Murder      1    34.739 58.041  17.456
+```
+
+***
+
+```
+Step:  AIC=-28.16
+Life.Exp ~ Population + Murder + HS.Grad + Frost
+
+             Df Sum of Sq    RSS     AIC
+<none>                    23.308 -28.161
+- Population  1     2.064 25.372 -25.920
+- Frost       1     3.122 26.430 -23.877
+- HS.Grad     1     5.112 28.420 -20.246
+- Murder      1    34.816 58.124  15.528
+
+Call:
+lm(formula = Life.Exp ~ Population + Murder + HS.Grad + Frost, 
+    data = statedata)
+
+Coefficients:
+(Intercept)   Population       Murder      HS.Grad        Frost  
+  7.103e+01    5.014e-05   -3.001e-01    4.658e-02   -5.943e-03  
+```
+
+## Other Concerns
+
+- Variable selection methods are sensitive to outliers and high leverage points.
+    - We should examine these and examine how they change if these points are removed.
+- Transformations may also have an impact.

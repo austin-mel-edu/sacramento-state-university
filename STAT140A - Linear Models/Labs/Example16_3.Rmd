@@ -1,0 +1,102 @@
+---
+title: "Two Factors with an Interaction"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(faraway)
+```
+
+## Example: Warp Breaks
+
+```{r}
+data("warpbreaks")
+par(mfrow=c(1,2))
+plot(breaks ~ wool, warpbreaks); plot(breaks ~ tension, warpbreaks)
+```
+
+## Example: Warp Breaks
+
+```{r}
+par(mfrow=c(1,2))
+with(warpbreaks,interaction.plot(wool,tension,breaks))
+with(warpbreaks,interaction.plot(tension,wool,breaks))
+```
+
+## Initial Diagnostics
+
+```{r}
+lmod <- lm(breaks ~ wool*tension, warpbreaks)
+plot(lmod, 1)
+```
+
+## Transformation
+
+Nonconstant variance, since response is count variable we will transform using a square root.
+
+```{r}
+lmod <- lm(sqrt(breaks) ~ wool*tension, warpbreaks)
+plot(lmod,1)
+```
+
+## Two-Way ANOVA
+
+```{r}
+anova(lmod)
+```
+
+## Another Way to Examine Interactions
+
+- May be easier to combine the factor levels into one combined `treatment`
+    - Will have a number of levels equal to the product of the two factor levels.
+
+*** 
+
+```{r results=FALSE}
+lmod <- lm(sqrt(breaks) ~ -1 + wool:tension, warpbreaks)
+summary(lmod)
+```
+
+```
+               Estimate Std. Error t value Pr(>|t|)    
+woolA:tensionL   6.5476     0.3266   20.05   <2e-16 ***
+woolB:tensionL   5.2381     0.3266   16.04   <2e-16 ***
+woolA:tensionM   4.8259     0.3266   14.78   <2e-16 ***
+woolB:tensionM   5.2987     0.3266   16.22   <2e-16 ***
+woolA:tensionH   4.8564     0.3266   14.87   <2e-16 ***
+woolB:tensionH   4.3022     0.3266   13.17   <2e-16 ***
+---
+
+Residual standard error: 0.9799 on 48 degrees of freedom
+Multiple R-squared:  0.9697,	Adjusted R-squared:  0.9659 
+F-statistic: 255.8 on 6 and 48 DF,  p-value: < 2.2e-16
+```
+
+## Tukey's HSD 
+
+```{r results=FALSE}
+TukeyHSD(aov(breaks ~ wool:tension, warpbreaks))
+```
+
+```
+               diff       lwr        upr     p adj
+B:L-A:L -16.3333333 -31.63966  -1.027012 0.0302143
+A:M-A:L -20.5555556 -35.86188  -5.249234 0.0029580
+B:M-A:L -15.7777778 -31.08410  -0.471456 0.0398172
+A:H-A:L -20.0000000 -35.30632  -4.693678 0.0040955
+B:H-A:L -25.7777778 -41.08410 -10.471456 0.0001136
+A:M-B:L  -4.2222222 -19.52854  11.084100 0.9626541
+B:M-B:L   0.5555556 -14.75077  15.861877 0.9999978
+A:H-B:L  -3.6666667 -18.97299  11.639655 0.9797123
+B:H-B:L  -9.4444444 -24.75077   5.861877 0.4560950
+B:M-A:M   4.7777778 -10.52854  20.084100 0.9377205
+A:H-A:M   0.5555556 -14.75077  15.861877 0.9999978
+B:H-A:M  -5.2222222 -20.52854  10.084100 0.9114780
+A:H-B:M  -4.2222222 -19.52854  11.084100 0.9626541
+B:H-B:M -10.0000000 -25.30632   5.306322 0.3918767
+B:H-A:H  -5.7777778 -21.08410   9.528544 0.8705572
+```
+

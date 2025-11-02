@@ -1,0 +1,196 @@
+---
+title: "One Factor Models"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## One Factor Models
+
+Think back to our penguins data. 
+
+```{r}
+library(palmerpenguins)
+data(penguins)
+by(penguins$body_mass_g, penguins$species, summary)
+```
+
+***
+
+```{r}
+plot(body_mass_g ~ species, penguins)
+```
+
+## The model
+
+```{r eval=FALSE}
+mod1 <- lm(body_mass_g ~ species, penguins)
+summary(mod1)
+```
+
+```
+Coefficients:
+                 Estimate Std. Error t value Pr(>|t|)    
+(Intercept)       3700.66      37.62   98.37   <2e-16 
+speciesChinstrap    32.43      67.51    0.48    0.631    
+speciesGentoo     1375.35      56.15   24.50   <2e-16 
+---
+Multiple R-squared:  0.6697,	Adjusted R-squared:  0.6677 
+F-statistic: 343.6 on 2 and 339 DF,  p-value: < 2.2e-16
+```
+
+## ANOVA
+
+- Our linear regression model output tests each level against some baseline.
+- Often, we would instead like to test for any differences among the factor levels.
+
+"Are all these means the same?" This is called the **AN**alysis **O**f **VA**riance, or ANOVA.
+
+## ANOVA
+
+For some factor $\alpha$ with levels $i = 1, \dots, I$ and $j=1, \dots, J_i$ observations per level,
+
+$$H_0: y_{ij} = \mu + \epsilon_{ij}$$
+$$H_1: y_{ij} = \mu + \alpha_i + \epsilon_{ij}$$
+
+where $\mu$ is the grand mean across all factors.
+
+## ANOVA
+
+We may also formulate this as
+
+- $H_0$: The mean outcome is the same across all groups.
+- $H_A$: At least one mean differs from the rest.
+
+OR
+
+- $H_0: \mu_1 = \mu_2 = \dots = \mu_k$ 
+- $H_A: \mu_i \ne \mu_j$ for at least one pair $(i, j)$
+
+where $k$ is the number of means being compared and the notation $\mu_i$ represents the mean for the $i$th group ($i$ can take on any whole number value between 1 and $k$). 
+
+## ANOVA
+
+
+## Conditions
+
+For ANOVA, we have three key conditions:
+
+1. Observations are independent within and across groups.
+
+    - For independence within group, we want to convince ourselves that for any particular group, the observations do not impact each other. 
+    - For independence across groups, we want to convince ourselves that the groups do not impact each other. 
+
+2. Data within each group are approximately normal.
+
+3. Variability is approximately equal across groups. 
+
+## Why Variance?
+
+Consider the following boxplots:
+
+```{r echo=FALSE}
+par(mfrow=c(1,2))
+set.seed(0)
+g1 <- rnorm(15, 2, 2)
+g2 <- rnorm(15, 1, 3)
+g3 <- runif(17, -4, 5)
+x1 <- c(g1, g2, g3); grp1 <- c(rep(1,15),rep(2,15),rep(3,17))
+
+h1 <- rnorm(15, 2, 0.5)
+h2 <- rnorm(15, 1, 0.5)
+h3 <- runif(17, 0, 1)
+x2 <- c(h1, h2, h3); grp2 <- c(rep(4,15),rep(5,15),rep(6,17))
+
+boxplot(x1 ~ grp1, ylim=c(-3,7), xlab="Group", ylab="x", main="Experiment 1")
+boxplot(x2 ~ grp2, ylim=c(-3,7), xlab="Group", ylab="x", main="Experiment 2")
+```
+
+## Why Variance?
+
+Is there a difference in the means for Experiment 1? What about Experiment 2? 
+
+- In fact, the means are $\mu_1 = \mu_4 = 2$, $\mu_2 = \mu_5 = 1$, and $\mu_3 = \mu_6 = 0.5$.
+- The variances for the Experiment 1 groups are much larger than for the Experiment 2 groups.
+- The larger variances in Experiment 1 obscure any differences between the group means. 
+
+## Mean Square Groups
+
+We need to consider whether the sample means differ more than we would expect them to based on random variation. 
+
+- This type of variation is called **mean square between groups** or $MSG$. 
+- It has associated degrees of freedom $df_G = k-1$ where $k$ is the number of groups. 
+
+$$MSG = \frac{SSG}{df_G}$$ where $SSE$ is the **sum of squares group**. 
+
+- If $H_0$ is true, variation in the sample means is due to chance. 
+
+## Mean Square Error
+
+- We need some quantity that will give us an idea of how much variability to expect if the null hypothesis is true. 
+- This is the **mean square error** or $MSE$, which has degrees of freedom $df_E = n-k$. 
+
+$$MSE = \frac{SSE}{df_E}$$ where $SSE$ is the **sum of squares error**. 
+
+## F Test
+
+We compare these two quantities by examining their ratio: $$F = \frac{MSG}{MSE}$$ 
+
+- This is the test statistic for the ANOVA. 
+
+## The Basic ANOVA Table
+
+|       | df     | Sum of Squares | Mean Squares | F Value | P-Value |
+|-|-|-|-|-|-|
+| group | $df_G$ | $SSG$ | $MSG$ | $F$ | p-value |
+| error | $df_E$ | $SSE$ | $MSE$ | | |
+
+## Example: Chick Weights
+
+- `R` has data on the weights of chicks fed six different feeds (diets). 
+- Assume these data are based on a random sample of chicks. 
+- There are $n=71$ total observations and $k=6$ different feeds. 
+- Let's assume we want to test with a 0.05 level of significance. 
+
+## Example: Chick Weights
+
+- $H_0$: the mean weight is the same for all six feeds.
+- $H_A$: at least one feed has a mean weight that differs. 
+
+The summaries for these data are
+
+```{r echo=FALSE}
+feeds <- levels(chickwts$feed)
+wtns <- tapply(chickwts$weight, chickwts$feed, length)
+wtmeans <- round(tapply(chickwts$weight, chickwts$feed, mean),2)
+wtsds <- round(tapply(chickwts$weight, chickwts$feed, sd),2)
+sumry <- rbind(wtns, wtmeans, wtsds)
+rownames(sumry) <- c("n","Mean", "Std Dev")
+print(sumry)
+```
+
+***
+
+```{r}
+boxplot(chickwts$weight~chickwts$feed, ylab="Weight", xlab="Feed")
+```
+
+***
+
+```{r}
+par(mfrow=c(2,3)); for(i in 1:6) hist(chickwts$weight[chickwts$feed==feeds[i]], xlab=feeds[i], main="")
+```
+
+## Example: Chick Weights
+
+```{r}
+summary(lm(chickwts$weight ~ chickwts$feed))
+anova(lm(chickwts$weight ~ chickwts$feed))
+
+aov(chickwts$weight ~ chickwts$feed)
+anova(aov(chickwts$weight ~ chickwts$feed))
+```

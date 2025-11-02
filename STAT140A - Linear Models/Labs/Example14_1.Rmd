@@ -1,0 +1,218 @@
+---
+title: "Example 14"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Two-Level Factors
+
+```{r}
+library(palmerpenguins)
+data(penguins)
+
+head(penguins)
+```
+
+```{r}
+by(penguins$body_mass_g, penguins$sex, summary)
+plot(body_mass_g ~ sex, penguins)
+```
+
+```{r}
+t.test(body_mass_g ~ sex, penguins, var.equal=TRUE)
+```
+
+Note: assuming equal variances ensures compatibility with later regression modeling. 
+
+To put two-level quantitative predictors into a model, we create what we call a *dummy variable*
+
+$$d_i = I(\text{category is level }i)$$
+
+```{r}
+d1 <- ifelse(penguins$sex == "male",1,0)
+d2 <- ifelse(penguins$sex == "female",1,0)
+lmod <- lm(body_mass_g ~ d1 + d2, penguins)
+summary(lmod)
+```
+
+Why the singularities?
+
+```{r}
+head(model.matrix(lmod), 10)
+```
+
+$d_2$ is fully determined by $d_1$! This suggests that we only need to use one of them.
+
+This is how R will automatically handle these types of factors.
+
+```{r}
+mod1 <- lm(body_mass_g ~ sex, penguins)
+summary(mod1)
+```
+
+The category which does not appear is the *reference level*. Our model allows us to examine how `body_mass_g` differs between male and female penguins.
+$$\hat{y} = 3862.27 + 683.41x$$
+where $x = I(\text{male})$.
+
+So for a male penguin, $x=1$ and $\hat{y} = 3862.27 + 683.41$; for a female penguin, $x=0$ and $\hat{y} = 3862.27$.
+
+Unsurprisingly, we can shove these into our existing regression modeling framework
+
+```{r}
+mod2 <- lm(body_mass_g ~ sex + bill_depth_mm +
+             flipper_length_mm, penguins)
+summary(mod2)
+```
+
+Now, the model looks like $$\hat{y} = -2246.8 + 538.1x_{\text{sex}} - 86.9x_{\text{bill}} + 38.2x_{\text{flipper}}$$ which simplifies to
+\[\begin{aligned}
+  \hat{y} &= -2246.8 + 538.1 - 86.9x_{\text{bill}} + 38.2x_{\text{flipper}} \\ &= -1708.7 - 86.9x_{\text{bill}} + 38.2x_{\text{flipper}}
+\end{aligned}\]
+for male penguins and 
+$$\hat{y} = -2246.8 - 86.9x_{\text{bill}} + 38.2x_{\text{flipper}}$$ for female penguins, essentially constructing a different intercept for each sex. 
+
+## Factors with >2 Levels
+
+```{r}
+plot(body_mass_g ~ species, penguins)
+```
+
+```{r}
+mod3 <- lm(body_mass_g ~ species, penguins)
+summary(mod3)
+```
+
+For the `species` variable, R has used `Adelie` as our baseline. So,
+
+$$\hat{y} = 3700.66 +32.43x_{\text{Chin}} +1375.35x_{\text{Gen}}$$
+
+- For `Adelie`, $$\hat{y} = 3700.66 +32.43\times0 +1375.35\times0 = 3700.66$$
+- For `Chinstrap`, $$\hat{y} = 3700.66 +32.43\times1 +1375.35\times0 = 3733.09$$
+- For `Gentoo`, $$\hat{y} = 3700.66 +32.43\times0 +1375.35\times1 = 5076.01$$
+
+Ultimately, each predicted value is the mean weight for penguins *of that species*.
+
+What do the p-values tell us? Basically, each coefficient is the additional weight for a penguin of that species, compared to Adelie penguins. So if the coefficient for Chinstrap penguins is not significiant, it means we did not find a significant difference between the weights of Chinstrap and Adelie penguins. 
+
+Note: if we wanted to use a different species as the baseline, we can use the `relevel` command.
+
+```{r}
+penguins$species <- relevel(penguins$species, ref = "Gentoo")
+mod4 <- lm(body_mass_g ~ species, penguins)
+summary(mod4)
+```
+
+## Interaction Effects
+
+```{r}
+par(mfrow=c(1,2))
+interaction.plot(x.factor = penguins$species, trace.factor = penguins$sex,
+                 response = penguins$body_mass_g,
+                 ylab="Body Mass", xlab="Species")
+interaction.plot(x.factor = penguins$sex, trace.factor = penguins$species,
+                 response = penguins$body_mass_g,
+                 ylab="Body Mass", xlab="Sex")
+par(mfrow=c(1,1))
+
+mod5 <- lm(body_mass_g ~ species*sex, penguins)
+summary(mod5)
+```
+
+Now let's consider interacting these with numeric inputs.
+
+```{r}
+mod6 <- lm(body_mass_g ~ species*flipper_length_mm, penguins)
+summary(mod6)
+```
+
+Here, the interactions basically allow us to also have different *slopes* for each species.
+
+$$\hat{y} = -6786.3+4251.4x_{\text{Adel}}+3750.1x_{\text{Chin}}+54.6x_{\text{flipper}}-21.8x_{\text{Adel}}x_{\text{flipper}}-20.0x_{\text{Chin}}x_{\text{flipper}}$$
+
+Then
+
+- For Gentoo penguins,
+
+\[\begin{aligned}
+  \hat{y} &= -6786.3+4251.4\times0+3750.1\times0+54.6x_{\text{flipper}}-21.8\times0x_{\text{flipper}}-20.0\times0x_{\text{flipper}}\\
+  &= -6786.3+54.6x_{\text{flipper}}
+\end{aligned}\]
+
+- For Adelie penguins,
+
+\[\begin{aligned}
+  \hat{y} &= -6786.3+4251.4\times 1+3750.1\times0+54.6x_{\text{flipper}}-21.8\times1x_{\text{flipper}}-20.0\times0 x_{\text{flipper}}\\
+  &= -6786.3+4251.4+54.6x_{\text{flipper}}-21.8 x_{\text{flipper}} \\
+  &= -2534.9 +32.8x_{\text{flipper}}
+\end{aligned}\]
+
+For Chinstrap penguins,
+
+\[\begin{aligned}
+  \hat{y} &= -6786.3+4251.4\times0+3750.1\times1+54.6x_{\text{flipper}}-21.8\times0x_{\text{flipper}}-20.0\times1 x_{\text{flipper}}\\
+  &= -6786.3+3750.1+54.6x_{\text{flipper}}-20.0 x_{\text{flipper}} \\
+  &= -3036.2 +34.6x_{\text{flipper}}
+\end{aligned}\]
+
+So each penguin species has its own intercept *and* slope. 
+
+## Model Significance
+
+```{r}
+mod7 <- lm(body_mass_g ~ species + flipper_length_mm, penguins)
+summary(mod7)
+```
+
+The `drop1` command allows us to look at the significance of each predictor variable (*not* the individual dummy variables) is significant, once the other variables are in the model. I am using the model comparison F test here.
+
+```{r}
+drop1(mod7, test="F")
+```
+
+This allows us to look at the significance of `species` as a single variable, rather than as a collection of dummy variables.
+
+If an input variable is significant overall, we leave all the dummy variables in the model, regardless of their individual significance levels. 
+
+## Alternate Coding Schemes
+
+Sometimes, instead of the dummy variable scheme we discussed earlier, we might have reason to construct a different coding scheme
+
+### Treatment Coding
+
+```{r}
+contr.treatment(4)
+```
+
+This is the dummy variable scheme we are familiar with, and is R's default. It treats one level as the baseline and allows us to compare the other levels to that baseline within the model.
+
+### Helmert coding
+
+```{r}
+contr.helmert(4)
+```
+
+If there are equal numbers of observations in each level, then the dummy variables will be orthogonal to each other and to the intercept. This is generally not very helpful for interpretation.
+
+### Sum Coding
+
+```{r}
+contr.sum(4)
+```
+
+This basically replaces the 0s reference level with -1s. This can be useful when there's no natural reference level.
+
+```{r}
+contrasts(penguins$sex) <- contr.sum(2)
+summary(lm(body_mass_g ~ sex, penguins))
+```
+
+We interpret this as the overall mean response is $4204.0$g. For male penguins, the mean is $4204.0 + 341.7 = 4545.7$; for female penguins, the mean is $4204.0 - 341.7 = 3862.3$.
+
+Note that these averages are accurate for male and female penguins, but the overall mean response for weight may not be exactly equal (if we have unequal numbers of male and female penguins in the data). In this case, there are approximately equal numbers, so that mean response is very close to the true overall mean weight in these data ($4207.057$, observations missing weight and/or sex removed). 
+
+There are other possibilities for coding. In general, choice of coding does not impact $R^2$, $\sigma^2$, or the overall $F$ test. However, it does affect $\hat{\beta}$ and its interpretation. 

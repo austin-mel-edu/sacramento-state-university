@@ -1,0 +1,141 @@
+---
+title: "Chapter 14 Example"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Chapter 16 Exercise 6
+
+```{r}
+library(faraway)
+data("hsb")
+
+str(hsb)
+summary(hsb)
+```
+
+### Part A 
+
+Model the `math` score in terms of the five factors: `gender`, `race`, `ses`, `schtyp` and
+`prog`. Include all second-order interactions but no higher order interactions.
+How many regression parameters does your model use? Explain how this can
+be calculated in terms of the number of levels for each factor.
+
+```{r}
+mod1 <- lm(math ~ (gender + race + ses + schtyp + prog)^2, hsb)
+summary(mod1)
+```
+
+Our 5 factors `gender`, `race`, `ses`, `schtyp` and `prog` have $i=2$, $j=4$, $k=3$, $l=2$, and $m=3$ levels, respectively. 
+So there are 
+\[\begin{aligned}
+  &(i-1)+(j-1)+(k-1)+(l-1)+(m-1) \\
+  &=(2-1)+(4-1)+(3-1)+(2-1)+(3-1)\\
+  &=9
+\end{aligned}\]
+non-interaction terms in the model.
+There then needs to be a parameter for each interaction between the dummy variables for a specific factor and all of the dummy variables for the remaining factors: 
+\[\begin{aligned}
+  &(i-1)[(j-1)+(k-1)+(l-1)+(m-1)] \\
+  &\quad + (j-1)[(k-1)+(l-1)+(m-1)] \\
+  &\quad + (k-1)[(l-1)+(m-1)] + (l-1)(m-1) \\
+  &= (2-1)[(4-1)+(3-1)+(2-1)+(3-1)] \\
+  &\quad + (4-1)[(3-1)+(2-1)+(3-1)] \\
+  &\quad + (3-1)[(2-1)+(3-1)] + (2-1)(3-1) \\
+  &= 1(3+2+1+2) + 3(2+1+2) + 2(1+2) + 1(2) \\
+  &= 31
+\end{aligned}\]
+plus the interaction term is $9+31+1=41$ regression parameters.
+
+In the R output, we can see this quickly by looking at the model degrees of freedom. 
+
+### Part B
+
+Determine whether some two-way interactions can be eliminated using the
+anova function.
+
+We are interacting the following variables:
+
+- `gender:race`
+- `gender:ses`
+- `gender:schtyp`
+- `gender:prog`
+- `race:ses`
+- `race:schtyp`
+- `race:prog`
+- `ses:schtyp`
+- `ses:prog`
+- `schtyp:prog`
+
+I'm going to remove a few at a time to speed things up.
+
+```{r}
+mod2 <- update(mod1, . ~ .  -gender:race - gender:ses - gender:schtyp - gender:prog)
+anova(mod2, mod1) 
+
+mod3 <- update(mod2, . ~ . -race:ses -race:schtyp -race:prog)
+anova(mod3, mod2)
+
+mod4 <- update(mod3, . ~ . -ses:schtyp -ses:prog)
+anova(mod4, mod3)
+
+mod5 <- update(mod4, . ~ . -schtyp:prog)
+anova(mod5, mod4)
+```
+
+### Part C 
+
+Determine whether some two-way interactions can be eliminated but now using
+the drop1 function. Why do the results differ from the previous question?
+Which method of testing should be preferred?
+
+```{r}
+drop1(mod1, test="F")
+```
+
+So in this case we would drop everything *except* the `race:prog` interaction. 
+
+This approach drops one at a time, whereas in the previous approach I dropped a few at a time. 
+
+### Part D
+
+Fit a model with only main effects and compare it to the model with all two-way
+interactions. Which model should be preferred?
+
+This is my `mod5` versus `mod1`.
+
+```{r}
+anova(mod5, mod1)
+summary(mod5)
+anova(mod5)
+```
+
+### Part E
+
+Determine which main effects are statistically significant and report on the
+differences you find.
+
+```{r}
+mod6 <- update(mod5,  .~. -gender)
+anova(mod6)
+mod7 <- update(mod6, .~. -schtyp)
+anova(mod7)
+summary(mod7)
+
+TukeyHSD(aov(mod7))
+```
+
+### Part F
+
+Check the regression diagnostics for the main effects only model and report on
+any anomalies.
+
+```{r}
+plot(mod7, 1)
+plot(mod7, 2)
+```

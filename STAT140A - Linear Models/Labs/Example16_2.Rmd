@@ -1,0 +1,105 @@
+---
+title: "Two Factors with Replication"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(faraway)
+```
+
+## Two-Way ANOVA
+
+Two-way ANOVA with more than one observation per cell:
+
+Consider the setting where $n_{ij}>1$ is the same for all $i,j$.
+
+- We call this design *orthogonal*
+
+Our model $$y_{ij} = \mu + \alpha_i + \beta_j + (\alpha\beta)_{ij} + \epsilon_{ij}$$ is now identifiable and can be examined in the usual ways.
+
+## Two-Way ANOVA
+
+```{r warning=FALSE}
+data(pvc); attach(pvc); par(mfrow=c(1,2))
+stripchart (psize ~ resin, xlab="Particle size", ylab="Resin railcar")
+stripchart (psize ~ operator, xlab="Particle size", ylab="0perator")
+```
+
+## Two-Way ANOVA
+
+It can be hard to tell random noise vs. actual interactions.
+
+```{r echo=FALSE}
+par(mfrow=c(1,2))
+interaction.plot (operator, resin, psize, legend=F)
+interaction.plot (resin, operator, psize, legend=F)
+```
+
+## Two-Way ANOVA
+
+```{r}
+mod2 <- lm(psize ~ operator*resin, pvc)
+anova(mod2)
+```
+
+## Two-Way ANOVA
+
+```{r}
+anova(lm(psize ~ operator+resin, pvc))
+```
+
+## ANOVA Diagnostics
+
+```{r}
+par(mfrow=c(1,2))
+plot(mod2, which=c(2,1))
+```
+
+## ANOVA Diagnostics
+
+- Some evidence of outliers.
+- Non-constant error variances.
+- Symmetry is because, for the full model, the fitted value for each combination of factors is the mean of the two replicates.
+
+## ANOVA Diagnostics
+
+```{r}
+mod4 <- lm(psize ~ operator+resin, pvc[-45,]) # remove outlier
+anova(mod4)
+```
+
+## Pairwise Comparisons
+
+```{r eval=FALSE}
+TukeyHSD(aov(mod4))
+```
+
+```
+$operator
+         diff       lwr        upr     p adj
+2-1 -0.262500 -1.073718  0.5487178 0.7114176
+3-1 -1.777083 -2.601711 -0.9524561 0.0000184
+3-2 -1.514583 -2.339211 -0.6899561 0.0001985
+
+$resin
+          diff         lwr        upr     p adj
+2-1 -1.0333333 -2.77520402  0.7085374 0.5566387
+3-1 -5.8000000 -7.54187069 -4.0581293 0.0000000
+4-1 -6.1833333 -7.92520402 -4.4414626 0.0000000
+```
+etc.
+
+## A Few Notes
+
+- The factors in these models are *fixed effects*.
+    - If factors (operators and resin) were randomly selected from larger population, they would be *random effects*, which are a little more complicated to deal with.
+    
+## A Few Notes
+
+- It is important that observations be genuine replications. 
+    - If they are correlated, the analysis will need to be adjusted.
+    - Repeated measurements are *not* replications and will be correlated. 
+        - Repeated measures ANOVA, etc.

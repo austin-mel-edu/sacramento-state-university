@@ -1,0 +1,98 @@
+---
+title: "Example 9.3"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Broken Stick Regression
+
+We observed previously that there are two groups in the `savings` data (based on `pop15`). 
+
+```{r}
+library(faraway)
+data(savings)
+
+lmod1 <- lm(sr ~ pop15, savings, subset=(pop15 < 35))
+lmod2 <- lm(sr ~ pop15, savings, subset=(pop15 > 35))
+plot(sr ~ pop15,savings,xlab="Prop under 15", ylab="Savings Rate")
+abline(v=35,lty=5)
+segments(20,lmod1$coef[1]+lmod1$coef[2]*20,35, lmod1$coef[1]+lmod1$coef[2]*35)
+segments(48,lmod2$coef[1]+lmod2$coef[2]*48,35, lmod2$coef[1]+lmod2$coef[2]*35)
+```
+
+This functions similarly to fitting a step function.
+
+However, we might want to fit this with the constraint that the two pieces meet at the join (at `pop15` = 35).
+
+We define what we call *basis functions* $$B_l(x) = (c-x)I(x < c)$$ and $$B_r(x) = (x-c)I(x > c)$$ where the identity function $I$ evaluates to 1 if the input is true and 0 otherwise. The value $c$ marks the division between the two groups (in this case, we would set $c=35$).
+
+Then we fit the model $$y = \beta_0 + \beta_1B_l(x) + \beta_2B_r(x) + \epsilon$$ and the two linear parts are guaranteed to meet at $c$
+
+```{r}
+lhs <- function(x) ifelse(x < 35,35-x,0)
+rhs <- function(x) ifelse(x < 35,0,x-35)
+lmod <- lm(sr ~ lhs(pop15) + rhs(pop15), savings)
+x <- seq(20,48,by=1)
+py <- lmod$coef[1] + lmod$coef[2]*lhs(x) + lmod$coef[3]*rhs(x)
+plot(sr ~ pop15,savings,xlab="Prop under 15", ylab="Savings Rate")
+lines(x,py,lty=2)
+```
+
+Which fit is preferable? It depends largely on our motivation for forcing the lines to connect. In this case, we might argue that they don't need to connect, that the two groups of countries are so different and there are so few countries in the middle region... or we might not. 
+
+## Interaction Terms
+
+The `mtcars` dataset, from the 1974 Motor Trend magazine, contains information about 32 automobiles. See `?mtcars` for details.
+
+Let's see if weight and horsepower interact in their impact(s) on mpg.
+
+```{r}
+mod0 <- lm(mpg ~ wt*hp, mtcars)
+summary(mod0)
+```
+
+We can visualize these interactions in a couple ways.
+
+```{r}
+# Bin wt and hp into 2 groups each
+mtcars$wt_bin <- cut(mtcars$wt, breaks = 2, labels = c("light", "heavy"))
+mtcars$hp_bin <- cut(mtcars$hp, breaks = 2, labels = c("low", "high"))
+
+# Interaction plot: mpg by hp_bin for each wt_bin
+interaction.plot(x.factor = mtcars$hp_bin,
+                 trace.factor = mtcars$wt_bin,
+                 response = mtcars$mpg,
+                 fun = mean,
+                 type = "b",
+                 pch = 19,
+                 col = c("red", "blue"),
+                 xlab = "Horsepower (binned)",
+                 ylab = "Average MPG",
+                 trace.label = "Car Weight")
+```
+
+When looking for interactions, we're looking to see if the lines are parallel. This plot shows some evidence of interaction. If the lines actually crossed, that would be much stronger evidence for interaction.
+
+We can also visualize these with a contour  plot. The contour plots are nice because we can look at the actual data rather than having to bin the variables. 
+
+```{r}
+# Create a grid of wt and hp
+wt_seq <- seq(min(mtcars$wt), max(mtcars$wt), length.out = 30)
+hp_seq <- seq(min(mtcars$hp), max(mtcars$hp), length.out = 30)
+grid <- expand.grid(wt = wt_seq, hp = hp_seq)
+grid$mpg_pred <- predict(mod0, newdata = grid)
+
+library(ggplot2)
+ggplot(grid, aes(x = wt, y = hp, z = mpg_pred)) +
+  geom_contour_filled() +
+  labs(x = "Weight", y = "Horsepower", fill = "Predicted MPG",
+       title = "Contour plot of MPG predicted by Weight and Horsepower") +
+  theme_minimal()
+```
+
+Here, if there's no interaction, the contour lines should be roughly evenly spaced and parallel to each other. 

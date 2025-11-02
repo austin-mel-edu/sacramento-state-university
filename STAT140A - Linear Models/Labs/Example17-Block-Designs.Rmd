@@ -1,0 +1,491 @@
+---
+title: "Block Designs"
+author: "Prof. Lauren Perry"
+output:
+  ioslides_presentation: default
+  beamer_presentation: default
+classoption: aspectratio=169
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(faraway)
+```
+
+## Completely Randomized Designs
+
+In a completely randomized design (CRD) treatments are assigned to experimental units *at random*.
+
+- Appropriate when units are homogeneous, but what if they're not?
+- If we don't know how to describe the form of the heterogeneity, we can continue to use CRD.
+- When units are heterogeneous in a known way, we can use *blocks*.
+
+## Blocks
+
+- Idea: experimental units are heterogeneous in a known way and can be arranged
+into blocks.
+    - within-block variation ideally small
+    - between block variation ideally large
+    - a block design can then be more efficient than a CRD
+- We prefer to have a block size equal to the number of treatments
+    - If this cannot be done, an incomplete block design must be used
+
+## Blocks
+
+- Blocks may be determined by the experimenter
+  - Ex: we think the treatment will function differently for high- vs low-risk patients, so we use risk level as a block
+- Blocks may also be predetermined by the nature of the experiment
+  - Ex: a study on crops in three different fields, where we use fields as a block
+
+## Randomized Block Designs
+
+- In a randomized block design, the treatment levels are assigned randomly within a
+block.
+    - Randomization restricted relative to CRD
+    - This means fewer possible permutations for random treatment assignment
+- Because they are a feature of the experimental, block effects must be included in the model regardless of significance
+    - That is, we cannot regain these degrees of freedom if not significant
+
+## Randomized Block Designs
+
+Suppose we have one treatment factor $\tau$ at $t$ levels and one blocking facor $\beta$ at $r$ levels: $$y_{ij}=\mu + \tau_i + \beta_j + \epsilon_{ij}$$
+
+- Suppose there is one observation for each treatment in each block. 
+- This is a *randomized complete block design*. 
+- Analysis very similar to two-way ANOVA
+    - Model can be extended to include interactions. 
+    - Significance of block effect only useful for future reference. 
+    
+## Example
+
+```{r}
+data(oatvar)
+attach(oatvar)
+head(oatvar)
+```
+
+## Example
+
+```{r}
+xtabs(yield ~ variety + block)
+```
+
+## Example
+
+```{r}
+par(mfrow=c(1,2))
+boxplot(yield ~ variety, xlab="yield", ylab="variety")
+boxplot(yield ~ block, xlab="yield",ylab="block")
+```
+
+## Example
+
+```{r}
+par(mfrow=c(1,2))
+interaction.plot(variety, block, yield)
+interaction.plot(block, variety, yield)
+```
+
+## Example
+
+```{r}
+mod1 <- lm(yield ~ block+variety)
+anova(mod1)
+```
+
+## Example
+
+The ANOVA corresponds to the sequential tests
+
+1. $y \sim 1$
+2. $y \sim \text{block}$
+3. $y \sim \text{block} + \text{variety}$
+
+We want to test the blocking effect in this way, within the context of the model as a whole (as opposed to testing it alone against $y$).
+
+## Example
+
+If we examine only the blocking effect, we get a different result
+
+```{r}
+anova(lm(yield ~ block))
+```
+
+This is because the denonimator in the F-tests is the mean square from the full model, so we lose that here.
+
+(We do not want to do this.)
+
+## Model Terms
+
+Note that the order the terms enter the model doesn't matter because this is an *orthogonal* design. 
+
+```{r}
+anova(lm(yield ~ variety+block))
+```
+
+## Model Terms
+
+- If the design is not orthogonal, for example if we had one less observation, this would not be the case.
+    - the ANOVA would change
+    - significance could change
+    - etc.
+- In this case, we should put the blocking factor into the model *first* so that it's included when we test the treatment factor. 
+
+## Example
+
+Lets remove an observation to see a design that's not orthogonal.
+
+```{r}
+anova(lm(yield ~ block+variety,subset=-1, oatvar))
+```
+
+## Example
+
+```{r}
+anova(lm(yield ~ variety+block,subset=-1, oatvar))
+```
+
+Here it only makes a minor difference, but that may not always be the case.
+
+## Example
+
+```{r}
+par(mfrow=c(1,2))
+plot(mod1, which=c(1,2))
+```
+
+## Example
+
+```{r}
+TukeyHSD(aov(yield ~ block+variety))$variety
+```
+
+## Example: non-additivity test
+
+We might want to confirm interactions aren't important
+
+```{r}
+varcoefs <- c(0,coef(mod1)[6:12])
+blockcoefs <-c(0,coef(mod1)[2:5])
+ab <- rep(varcoefs,each=5)*rep(blockcoefs,8)
+h <- update(mod1,.~.+ab)
+anova(h)
+```
+
+## RCBD versus CRD
+
+- We can measure precision by examining $\hat{\sigma}^2$.
+- So we can compare predicion for designs of the same sample size by comparing their $\hat{\sigma}^2$
+- To examine *relative efficiency*, we find the ratio of the variances of models with and without the blocking effect. $$\frac{\hat{\sigma}^2_{CRD}}{\hat{\sigma}^2_{RCBD}}$$
+
+## RCBD versus CRD
+
+```{r}
+gcrd <- lm(yield ~ variety) # model without block
+(summary(gcrd)$sig / summary(mod1)$sig)^2
+```
+
+- A CRD would require 66\% more observations to obtain the same level of precision as the RCBD. 
+- Increased efficiency not guaranteed for RCBD 
+    - use blocks only if there's a strong scientific reason to.
+
+# Latin Squares
+
+## Latin Squares
+
+- Latin Squares are useful when there are two blocking variables.
+- Example: risk and gender
+
+## Example Latin Square
+
+- Suppose there are 4 treatments (A-D) and two blocks with 4 levels each.
+
+| | 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- | --- |
+| I   | A | B | C | D |
+| II  | B | D | A | C |
+| III | C | A | D | B |
+| IV  | D | C | B | A |
+
+- Each treatment assigned to each block exactly once.
+    - Each row and column contains all 4 treatments.
+    
+## Latin Squares 
+
+- We should choose randomly from all possible Latin Square layouts. 
+- The R package `magic` can be sued to generate such squares.
+
+## Latin Squares
+
+- Let $\tau$ be the treatment and $\beta$ and $\gamma$ the blocking factors.
+
+The model is $$y_{ij}=\mu + \tau_i + \beta_j + \gamma_{k} + \epsilon_{ijk}$$
+
+- Not all combinations of $i,j,k$ will appear.
+
+## Latin Squares
+
+- Test for treatment effect using F-test on the full model vs a model with the treatment removed.
+- The Tukey pairwise CIs are $$\hat{\tau}_l - \hat{\tau}_m \pm \frac{q_{t,(t-1)(t-2)}}{\sqrt{2}}\hat{\sigma}\sqrt{2/t}$$
+
+## Latin Squares vs. RCBD
+
+- Latin Squares more efficient when blocking effects are sizable. 
+- Variations:
+    - Can be replicated if more runs available.
+    - If both block sizes *not* equal to number of treatments, can create Latin Rectangles by adjoining Latin squares.
+    - Graeco-Latin squares occasionally used for three blocking variables (but rarely seen in practice).
+    
+## Latin Squares without Blocks
+
+- Can also be used to compare three treatment factors.
+    - Requires $t^2$ runs instead of $t^3$ runs. 
+    - Downside: cannot estimate interactions. 
+    - This is one type of fractional factorial.
+    
+## Example
+
+```{r}
+data(abrasion)
+abrasion
+```
+
+## Example
+
+```{r}
+xtabs(wear ~ run + position, abrasion)
+```
+
+## Example
+
+Latin Square Structure:
+
+```{r}
+matrix(abrasion$material, 4, 4)
+```
+
+## Example
+
+```{r}
+par(mfrow=c(1,3))
+with(abrasion, boxplot(wear ~ material, xlab="Material"))
+with(abrasion, boxplot(wear ~ run, xlab="Run"))
+with(abrasion, boxplot(wear ~ position, xlab="Position"))
+```
+
+## Example
+
+```{r}
+g <- lm(wear ~ material+run+position, abrasion)
+drop1(g, test="F") # test each variable against full model
+```
+
+## Example
+
+```{r}
+par(mfrow=c(1,2))
+plot(g, which=c(1,2))
+```
+
+***
+
+```{r results=FALSE}
+summary(g)
+```
+
+```
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  254.750      6.187  41.174 1.37e-08 ***
+materialB    -45.750      5.534  -8.267 0.000169 ***
+materialC    -24.000      5.534  -4.337 0.004892 ** 
+materialD    -35.250      5.534  -6.370 0.000703 ***
+run2          -2.250      5.534  -0.407 0.698423    
+run3          12.500      5.534   2.259 0.064657 .  
+run4          -9.250      5.534  -1.671 0.145658    
+position2     26.250      5.534   4.743 0.003180 ** 
+position3      8.500      5.534   1.536 0.175454    
+position4      8.250      5.534   1.491 0.186608    
+---
+
+Multiple R-squared:  0.9506,	Adjusted R-squared:  0.8766 
+F-statistic: 12.84 on 9 and 6 DF,  p-value: 0.002828
+```
+
+## Example
+
+```{r}
+qtukey(0.95,4,6)*5.53/sqrt(2)
+```
+
+We can them compare pairwise differences to this width:
+
+```{r}
+scoefs <- c(0,coef(g)[2:4])
+round(outer(scoefs,scoefs,"-"), 2)
+```
+
+## Relatively Efficiency
+
+We compare the Latin square to the completely randomized design:
+
+```{r}
+lmodr <- lm(wear ~ material,abrasion)
+(summary(lmodr)$sig/summary(g)$sig)^2
+```
+
+So the Latin square is 3.84 times more efficient than the CRD. 
+
+# Balanced Incomplete Block Designs
+
+## Balanced Incomplete Block Designs
+
+In a complete block design, block size = number treatments. 
+
+What happens when block size < number treatments? 
+
+- Treatments and blocks not orthogonal.
+- Some treatment contrasts will not be identifiable from certain block contrasts.
+    - *Confounding*: these treatment contrasts cannot be examined. 
+
+## Balanced Incomplete Block (BIB) Designs
+
+- In a BIB design, all pairwise differences are identifiable and have same standard error. 
+    - Pairwise differences are more likely to be interesting than other contrasts, so the design is constructed to facilitate this.
+    
+## Example
+
+Suppose, we have four treatments ($t=4$) A, B, C, D and the block size, $k=3$ and there are $b=4$ blocks.
+
+- Each treatment will appear $r=3$ times.
+- Each pair of treatments appears together in a block $\lambda =2$ times. 
+
+## Example
+
+One possibility:
+
+| Block 1 | Block 2 | Block 3 | Block 4 | 
+| ------- | ------- | ------- | ------- | 
+| A | A | A | B |
+| B | B | C | C |
+| C | D | D | D |
+
+***
+
+- Treatments ($t$), block size, $k$, and $b$ blocks.
+- Each treatment will appear $r$ times.
+- Each pair of treatments appears in the *same* block $\lambda$ times. 
+
+For a BIB design, we require
+
+- $b \ge t > k$ 
+- $rt = bk = n$
+- $\lambda(t-1) = r(k-1)$
+    - Number of pairs in a block is $k(k-1)/2$ so total pairs is $bk(k-1)/2$.
+    - Number of treatment pairs is $t(t-1)/2$
+        - Ratio of these must be $\lambda$
+
+## BIB Designs
+
+Since $\lambda$ must be an integer, a BIB design isn't always possible, even if the first two conditions hold. 
+
+- Ex: $r=4, t=3, b=6, k=2$ so $\lambda=2$ 
+    - BIB possible
+- Ex: $r=4, t=4, b=8, k=2$ so $\lambda=4/3$ 
+    - BIB not possible
+
+## BIB Model
+
+Same as for RCBD: 
+
+$$y_{ij}=\mu + \tau_i + \beta_j + \epsilon_{ij}$$
+
+## Example
+
+- A nutritionist studied the effects of six diets, “a” through “f,” on weight
+gain of domestic rabbits.
+- From past experience with sizes of litters, it was felt that only three uniform rabbits could be selected from each available litter. 
+- There were 10 litters available forming blocks of size 3.
+
+## Example
+
+```{r}
+data(rabbit)
+head(rabbit)
+```
+
+## Example
+
+```{r}
+xtabs (gain ~ treat+block, rabbit)
+```
+
+- 0 values correspond to no observation. 
+- Note BIB structure w/ each pair of diets appearing in same block exactly twice
+
+## Example
+
+```{r message=F}
+attach(rabbit); par(mfrow=c(1,2))
+boxplot(gain ~ block); boxplot(gain ~ treat)
+```
+
+
+## Example
+
+```{r}
+mod1 <- lm(gain ~ block + treat, rabbit) # enter block first!
+drop1(mod1, test="F")
+```
+
+## Example
+
+- This design is not orthogonal, so we use `drop1` instead of `anova`
+- This way, we can examine each term in the presence of the other.
+
+## Example
+
+```{r}
+par(mfrow=c(1,2))
+plot(mod1, which=c(1,2))
+```
+
+## Example: Pairwise CIs
+
+- Since this is not a complete layout, we need to construct the Tukey CIs.
+
+```{r}
+coef(summary(mod1))[11:15,]
+```
+
+## Example: Pairwise CIs
+
+Compute Tukey CV: 
+
+```{r}
+qtukey(0.95, 6, 15) # 6 means to compare, 15 model df
+```
+
+## Example: Pairwise CIs
+
+- Std errors are all 2.242
+
+Compute interval width:
+
+```{r}
+qtukey(0.95, 6, 15)*2.242/sqrt(2)
+```
+
+## Example
+
+```{r}
+tcoefs <- c(0, coef(mod1)[11:15])
+abs(outer(tcoefs, tcoefs,"-")) > 7.2842 # only e-f different
+```
+## Example
+
+Relative efficiency of this BIB vs CRD
+
+```{r}
+mod.crd <- lm(gain ~ treat, rabbit)
+(summary(mod.crd)$sig / summary(mod1)$sig)^2 # way more efficient!
+```

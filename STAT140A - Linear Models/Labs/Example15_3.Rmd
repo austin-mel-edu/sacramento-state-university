@@ -1,0 +1,267 @@
+---
+title: "Multiple Comparisons"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: ioslides_presentation
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set()
+```
+
+## ANOVA diagnostics
+
+```{r}
+amod <- aov(weight ~ feed, chickwts)
+anova(amod)
+```
+
+## Diagnostics
+
+```{r}
+par(mfrow=c(1,2))
+plot(amod, c(1,2))
+```
+
+
+## After the ANOVA
+
+- $H_0: \mu_1 = \mu_2 = \dots = \mu_k$ 
+- $H_A: \mu_i \ne \mu_j$ for at least one pair $(i, j)$
+  
+  We've rejected the null hypothesis... now what?
+  
+## Pairwise Comparisons
+
+A confidence interval for the difference between two levels can be formulated as 
+
+$$\hat{\mu}_i-\hat{\mu}_j \pm t_{df}^{\alpha/2}SE(\hat{\mu}_i-\hat{\mu}_j)$$
+
+where $SE(\hat{\mu}_i-\hat{\mu}_j) = \hat{\sigma}\sqrt{1/n_i + 1/n_j}$ and $df=n-k$
+
+## Multiple Comparisons
+
+Why do the ANOVA at all?
+
+Why not just start with pairwise comparisons?
+
+## Type I Error Rate
+
+For the `chickwts` data, there are 6 different feeds.
+
+- Examining all possible pairs means doing 15 different comparisons.
+- Even if there are no differences, with an $\alpha=0.05$, there's a pretty good chance one of them will be statistically significant just by chance!
+- In a multiple comparisons setting, the true Type I error rate is *higher than* $\alpha$
+    - We need to adjust for this
+    
+## Multiple Comparisons
+
+Note: If we only want to look at a few specific pairwise comparisons, we need to select those *before looking at the data*
+
+- If we only look at the comparisons that look interesting based on the data, we are implicitly making all the other comparisons as well. 
+
+## Test Corrections
+
+- Tukey's HSD
+- Bonferroni correction
+- Benjamini-Hochberg
+- ...and many more
+
+## Tukey's HSD (honest significant difference)
+
+- This method is a good balance of dealing with Type I error without being too aggressive.
+- Essentially a t-test, but one that corrects for family-wise error rate (multiple comparisons).
+
+## Tukey's HSD
+
+- Compare absolute t values, $|t| = \left|\frac{\bar{x}_i - \bar{x}_j}{SE}\right|$ to the *studentized range distribution*
+  - Adjusted p-value
+- Family-wise confidence intervals
+
+## studentized range distribution
+
+Let $X_1, \dots, X_n$ be iid $N(\mu, \sigma^2)$ and let $R$ be the range of $X$. 
+
+Then $q_{n, \nu} = R/\hat{\sigma}$ has the studentized range distribution where $\nu$ is the degrees of freedom used in estimating $\hat{\sigma}$. 
+
+## Tukey CIs
+
+$$\hat{\mu}_i-\hat{\mu}_j \pm \frac{q_{n, \nu}}{\sqrt{2}}\hat{\sigma}\left(\frac{1}{n_i}+\frac{1}{n_j}\right)$$
+
+Note: when the group sizes are very unequal, Tukey's HSD may become too conservative. 
+
+## Example: Chick Weights
+
+```{r}
+anova(amod)
+```
+
+***
+
+```{r eval=FALSE}
+TukeyHSD(amod)
+```
+
+```
+                           diff         lwr       upr     p adj
+horsebean-casein    -163.383333 -232.346876 -94.41979 0.0000000
+linseed-casein      -104.833333 -170.587491 -39.07918 0.0002100
+meatmeal-casein      -46.674242 -113.906207  20.55772 0.3324584
+soybean-casein       -77.154762 -140.517054 -13.79247 0.0083653
+sunflower-casein       5.333333  -60.420825  71.08749 0.9998902
+linseed-horsebean     58.550000  -10.413543 127.51354 0.1413329
+meatmeal-horsebean   116.709091   46.335105 187.08308 0.0001062
+soybean-horsebean     86.228571   19.541684 152.91546 0.0042167
+sunflower-horsebean  168.716667   99.753124 237.68021 0.0000000
+meatmeal-linseed      58.159091   -9.072873 125.39106 0.1276965
+soybean-linseed       27.678571  -35.683721  91.04086 0.7932853
+sunflower-linseed    110.166667   44.412509 175.92082 0.0000884
+soybean-meatmeal     -30.480519  -95.375109  34.41407 0.7391356
+sunflower-meatmeal    52.007576  -15.224388 119.23954 0.2206962
+sunflower-soybean     82.488095   19.125803 145.85039 0.0038845
+```
+
+## Example: Chick Weights
+
+```{r}
+plot(TukeyHSD(aov(weight ~ feed, chickwts)))
+```
+
+## Example: Junior School Project
+
+Data on mathematics test scores for students in 49 London school.
+
+```{r}
+data(jsp, package="faraway")
+jsp$mathcent <- jsp$math - mean(jsp$math)
+```
+
+We're interested in deviations from the average, so we center the scores.
+
+##  Example: Junior School Project
+
+```{r}
+plot(jsp$mathcent ~ jsp$school)
+```
+
+##  Example: Junior School Project
+
+```{r echo=FALSE}
+lmod <- lm(mathcent ~ school-1, jsp)
+```
+
+```{r eval=FALSE}
+lmod <- lm(mathcent ~ school-1, jsp) # no-intercept model
+summary(lmod)
+```
+
+```
+Coefficients:
+         Estimate Std. Error t value Pr(>|t|)    
+school1  -3.36845    0.76861  -4.383 1.21e-05 ***
+school2   0.67141    1.22870   0.546 0.584806    
+school3   2.29641    1.06409   2.158 0.030995 *  
+... 
+school49  2.79641    0.86882   3.219 0.001301 ** 
+school50 -2.65203    0.73356  -3.615 0.000305 ***
+---
+
+Residual standard error: 7.372 on 3187 degrees of freedom
+Multiple R-squared:  0.08206,	Adjusted R-squared:  0.06794 
+F-statistic: 5.814 on 49 and 3187 DF,  p-value: < 2.2e-16
+```
+
+##  Example: Junior School Project
+
+- The no-intercept model allows us to examine all 50 schools
+- Since we've centered the response, the t-tests are meaningful
+    - Each is testing a difference from 0, the center
+- Good initial evidence for differences, but we're doing a lot of multiple comparisons here!
+
+##  Example: Junior School Project
+
+```{r}
+anova(lmod)
+```
+
+##  Example: Junior School Project
+
+- There are a ton of possible comparisons here! 
+- Examine which schools are significantly different from average (rather than pairwise between each other).
+- We still need to make an adjustment for multiple comparisons
+
+## Bonferroni Correction
+
+- Controls the *family-wise error rate*
+    - the overall probability of falsely detecting a difference if none exists
+- Adjust $\alpha$ by dividing by the number of comparisons
+    - Or, equivalently, multiply all p-values by the number of comparisons.
+    
+## Bonferroni Correction
+
+```{r results=FALSE}
+pvals <- summary(lmod)$coef[,4]
+padj <- p.adjust(pvals, method="bonferroni")
+coef(lmod)[padj < 0.05]
+```
+
+```
+  school1  school16  school21  school28   
+-3.368450 -3.737400 -3.618450 -5.828595   
+
+school31  school40  school45  school50
+3.824053 -4.985458 -4.639201 -2.652027
+```
+
+## Benjamini and Hochberg
+
+- Controlling for the family-wise error rate can be overly conservative.
+- The Benjamini and Hochberg correction instead controls for the *false discovery rate*
+    - This is the proportion of effects identified as significant which are not real.
+
+## Benjamini and Hochberg
+
+Given sorted p-values $p_{(i)}$ for $i = 1, \dots, m$, find the largest $i$ for which $$p_{(i)} \le \alpha\left(\frac{i}{m}\right)$$All tests corresponding to $p_{(i)}$ up to and including this $i$ are considered significant. 
+
+## Benjamini and Hochberg
+
+For example, suppose $m=5$ and we have sorted p-values $\{0.002, 0.005, 0.035, 0.056, 0.122\}$.
+
+We compare these p-values to $$\alpha\left(\frac{i}{m}\right) = 0.05\frac{i}{5} = 0.01i$$
+or the values $\{0.01, 0.02, 0.03, 0.04, 0.05\}$
+
+The largest $i$ for which $p_{(i)} \le \alpha\left(\frac{i}{m}\right)$ is $i=2$, where $0.005 < 0.02$
+
+## Example
+
+For our school data,
+
+```{r}
+names(which(sort(pvals) < (1:49)*0.05/49))
+```
+
+## Example
+
+Or we can use the code
+
+```{r results=FALSE}
+padj <- p.adjust(pvals, method="fdr")
+coef(lmod)[padj < 0.05]
+```
+
+```
+  school1   school4   school9  school14  school16  school21  school24   
+-3.368450 -2.661928  2.245764 -3.289835 -3.737400 -3.618450  2.623786 
+
+ school27  school28  school31 school34  school36  school40  school45   
+-2.305764 -5.828595  3.824053 1.935898  2.360544 -4.985458 -4.639201  
+
+school46  school47  school49  school50
+3.063562  2.396895  2.796405 -2.652027
+```
+
+## Example
+
+In this case, 18 schools are identified rather than the 8 identified by the Bonferroni approach.
+
+In general, adjusting for false discovery rate is less stringent than adjusting for family-wise error rate.

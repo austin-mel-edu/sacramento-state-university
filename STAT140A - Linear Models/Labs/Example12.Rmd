@@ -1,0 +1,284 @@
+---
+title: "Complete Regression Example"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Insurance Redlining
+
+Insurance redlining is the practice of refusing to issue insurance to certain types of people or within some geographic area. 
+
+- Insurance companies may this in a way that is reasonable.
+    - Ex: refusing to insure someone with multiple DUIs.
+
+## Insurance Redlining    
+
+- In this dataset, however, our goal is to look for examples of discriminatory insurance redlining in late 1970s Chicago. 
+- Examine FAIR plan policies by zip code between Dec 1977 and May 1978. 
+    - This plan was offered to homeowners who had been rejected by the voluntary market, so it's a good proxy for examining insurance refusals.
+
+## The Variables
+
+- `race`: racial composition in percentage of minority
+- `fire`: fires per 100 housing units
+- `theft`: thefts per 1000 population
+- `age`: percentage of housing units built before 1939
+- `involact`: new FAIR plan policies and renewals per 100 housing units
+- `income`: median family income in thousands of dollars
+- `side`: north or south side of Chicago
+
+## Ecological Correlation
+
+The *ecological fallacy* is concluding that a correlation between two variables holds at the individual level.
+
+- Ex: countries with higher dietary fat intakes tend to have higher rates of breast cancer, but *individuals* with higher fat diets aren't necessarily at a higher risk of breast cancer. 
+
+In the Chicago dataset, we only have aggregated data, *not* individual data, so we will need to be mindful of this in our analysis.
+
+## Initial Data Analysis
+
+```{r}
+data(chredlin, package="faraway")
+attach(chredlin)
+str(chredlin)
+```
+
+## What can we observe?
+
+```{r}
+summary(chredlin)
+```
+## What can we observe?
+
+- Race is a percent, so there's a good amount of variability here.
+- Skew in `theft` and `income`
+- Response variable has a lot of 0s, which isn't a great sign for our model assumptions.
+
+## Initial Data Analysis
+
+```{r}
+round(cor(chredlin[,1:6]),3)
+```
+
+## Graphical Summaries
+
+```{r eval=FALSE}
+par(mfrow=c(2,3))
+# histograms for numeric variables
+plot(race, involact)
+plot(fire, involact)
+plot(theft, involact)
+plot(age, involact)
+plot(income, involact)
+# boxplot for categorical
+plot(involact~side)
+```
+
+## Graphical Summaries
+
+```{r echo=FALSE}
+par(mfrow=c(2,3))
+plot(race, involact)
+plot(fire, involact)
+plot(theft, involact)
+plot(age, involact)
+plot(income, involact)
+plot(involact~side)
+```
+
+## What can we observe?
+
+- Definitely some fairly strong relationships here. 
+- Some potential outliers/influential points.
+
+## Initial Analysis
+
+```{r eval=FALSE}
+summary(lm(involact ~ race,chredlin))
+```
+
+```
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 0.129218   0.096611   1.338    0.188    
+race        0.013882   0.002031   6.836 1.78e-08 ***
+---
+
+Multiple R-squared:  0.5094,	Adjusted R-squared:  0.4985 
+F-statistic: 46.73 on 1 and 45 DF,  p-value: 1.784e-08
+```
+
+## Initial Analysis
+
+Zip codes with a higher proportion of minorities are being rejected for home insurance at a higher rate.
+
+Question:
+
+- Is this due to discrimination, or is it due to differential risk factors?
+
+***
+
+```{r}
+par(mfrow=c(1,2))
+plot(race, fire); abline(lm(fire~race))
+plot(race, theft); abline(lm(theft~race))
+```
+
+## Initial Analysis
+
+- There is some correlation bw fire rate and prop of minorities.
+- Outlier makes it harder to see correlation bw theft and prop of minorities.
+
+Question:
+
+- If we control for these risk factors by including them in the model, is race still significant?
+
+## Full Model
+
+```{r}
+lmod <- lm(involact ~ race + fire + theft + age + log(income) + side, chredlin)
+```
+
+- Note we are using `log(income)` 
+    - This should help deal with some of the skew in this variable.
+    - Makes sense to consider income on a multiplicative scale.
+        - ($1000 worth a lot more to us than to a billionaire)
+- We examine the model summary next, but we should avoid commenting on it too much until we've done our diagnostics.
+
+***
+
+```{r eval=FALSE}
+summary(lmod)
+```
+
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) -1.190806   1.114419  -1.069  0.29168    
+race         0.009330   0.002847   3.277  0.00217 ** 
+fire         0.039994   0.008936   4.475 6.19e-05 ***
+theft       -0.010227   0.002899  -3.528  0.00107 ** 
+age          0.008423   0.002857   2.948  0.00532 ** 
+log(income)  0.343419   0.405406   0.847  0.40198    
+sides        0.016287   0.124922   0.130  0.89692    
+---
+
+Residual standard error: 0.3386 on 40 degrees of freedom
+Multiple R-squared:  0.7518,	Adjusted R-squared:  0.7146 
+F-statistic:  20.2 on 6 and 40 DF,  p-value: 1.059e-10
+```
+
+## Diagnostics
+
+```{r}
+par(mfrow=c(1,2))
+plot(lmod, 1:2)
+```
+
+## Diagnostics
+
+- The diagonal line in the residuals is caused by the large number of 0s in the response. 
+    - When $y = 0$, the residual $\hat{e} = −\hat{y} = -x^T\hat{\beta}$
+- Both of these plots look reasonable so, despite earlier concerns, we can proceed.
+
+## Diagnostics
+
+```{r}
+plot(lmod, 5)
+```
+
+## Diagnostics
+
+```{r}
+chredlin[c("60607","60610"),]
+```
+
+## Diagnostics
+
+These are high theft, high fire rate zip codes.
+
+```{r}
+match(c("60607", "60610"),row.names(chredlin))
+lmode <- lm(involact ~ race + fire + theft + age + log(income),
+            chredlin,subset=-c(6,24))
+```
+
+***
+
+```{r eval=FALSE}
+summary(lmode)
+```
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) -0.576737   1.080046  -0.534   0.5964    
+race         0.007053   0.002696   2.616   0.0126 *  
+fire         0.049647   0.008570   5.793    1e-06 ***
+theft       -0.006434   0.004349  -1.479   0.1471    
+age          0.005171   0.002895   1.786   0.0818 .  
+log(income)  0.115703   0.401113   0.288   0.7745    
+---
+
+Multiple R-squared:  0.8041,	Adjusted R-squared:  0.779 
+F-statistic: 32.01 on 5 and 39 DF,  p-value: 8.192e-13
+```
+
+## Diagnostics
+
+- Theft and age are no longer significant.
+- Our primary variable of interest, `race` remains significant.
+    - That conclusion is robust to the removal of one or two extreme points. 
+
+## Transformations
+
+We should now spend some time experimenting with transformations of the predictors. 
+
+```{r}
+par(mfrow=c(1,2))
+termplot(lmod, partial.resid=TRUE, terms=1:2)
+```
+
+## Sensitivity Analysis
+
+How robust is our conclusion?
+
+- If we selected a different subset of covariates, would `race` still be statistically significant?
+- We examine all possible subsets of predictors and examine the p-values for each `race` coefficient
+    - I have sorted the p-values from largest to smallest, as they will not all fit on the slide.
+    - See the RMD file for the code and complete output.
+
+## Sensitivity Analysis
+
+```{r echo=FALSE}
+listcombo <- unlist(sapply(0:5,function(x) combn(5, x, simplify= FALSE)),
+                    recursive=FALSE)
+predterms <- lapply(listcombo, function(x) 
+  paste(c("race",c("fire","theft","age","log(income)","side")[x]),collapse="+"))
+coefm <- matrix(NA,32,2)
+for(i in 1:32){
+  lmi <- lm(as.formula(paste("involact ~ ",predterms [[i]])), data=chredlin)
+  coefm[i,] <- summary(lmi)$coef[2,c(1 ,4)]
+}
+rownames(coefm) <- predterms
+colnames(coefm) <- c("beta","pvalue")
+round(coefm[order(coefm[,2], decreasing=T),],4)
+```
+
+## Sensitivity Analysis 
+
+- All of the p-values associated with the `race` variable are significant
+    - We can be confident that the effect is not sensitive to our choice of predictors.
+    - It *could* be sensititive to some other predictor not in our data. 
+    
+## Final Model
+
+In this case, the primary modeling goal is examining the significance of `race` in insurance denials.
+
+- We probably want to keep other risk factors in the model, regardless of their significance. 
+
+Regression is challenging in part because there usually isn't a "right" answer! 

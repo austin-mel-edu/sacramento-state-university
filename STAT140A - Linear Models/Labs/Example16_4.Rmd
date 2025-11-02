@@ -1,0 +1,141 @@
+---
+title: "Larger Factorial Experiments"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(faraway)
+```
+
+## Larger Factorial Experiments
+
+Suppose we have three or more factors $\alpha, \beta, \gamma, \dots$ each with some number of levels $l_{\alpha}, l_{\beta}, l_{\gamma}, \dots$.
+
+- A *full factorial* experiment has at least one run for each combination of factor levels (equal to $l_{\alpha}\times l_{\beta}\times l_{\gamma}\times\dots$)
+    - This can easily be a very large number of treatments!
+    - Could also include all possible interactions, higher order terms, etc.
+    - Usually not performed for more than three or four factors.
+
+## Larger Factorial Experiments
+
+- If no interactions significant, we get several one-way experiments for the cost of one.
+- Efficient with experimental resources.
+- Often done without replication due to cost concerns.
+    - May need to assume some higher order interactions are zero in order to have enough degrees of freedom to examine lower level effects.
+    
+## Fractional Factorials
+
+Fractional factorials use only a fraction of the number of runs done in a full factorial experiment.
+
+## Fractional Factorials
+
+Consider an experiment with 7 factors, each with 2 levels:
+
+| Effect | mean | main | 2-way | 3-way | 4 | 5 | 6 | 7 |
+|---|---|---|---|---|---|---|---|---|
+| Parameters | 1 | 7 | 21 | 35 | 35 | 21 | 7 | 1 |
+
+- Assuming higher order interactions are negligible will save us from doing $2^7=128$ runs. 
+- 8 runs would allow us to estimate main effects.
+- Hard to find a good design to examine all 2-way effects without a lot of runs.
+
+## Fractional Factorials
+
+Goal: estimate as many parameters as possible with as few data points as possible.
+
+- May not have many degrees of freedom left over.
+- $\sigma^2$ must be small for this to work (to distinguish significant effects).
+
+## Example: Speedometer cables
+
+- 15 factors labeled `a` through `o`
+- Two levels per factor, high and low
+  - A `+` indicates high and `-` indicates low
+- Design with only 15 runs used to estimate overall mean with 15 main effects.
+- Assume no interactions
+
+```{r eval=FALSE}
+data(speedo)
+speedo # two levels of each factor: +/-
+```
+
+## Example
+
+```{r echo=FALSE}
+data(speedo)
+speedo # two levels of each factor: +/-
+```
+
+***
+
+```{r results=FALSE}
+mod5 <- lm(y ~ ., speedo)
+summary(mod5) # n=p
+```
+
+```
+Residuals:
+ALL 16 residuals are 0: no residual degrees of freedom!
+
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)
+(Intercept)  0.5825000        NaN     NaN      NaN
+h-          -0.0621875        NaN     NaN      NaN
+d-          -0.0609375        NaN     NaN      NaN
+...
+g-           0.1403125        NaN     NaN      NaN
+o-          -0.0059375        NaN     NaN      NaN
+
+Residual standard error: NaN on 0 degrees of freedom
+Multiple R-squared:      1,	Adjusted R-squared:    NaN 
+F-statistic:   NaN on 15 and 0 DF,  p-value: NA
+```
+***
+
+```{r results=FALSE}
+model.matrix(mod5) # + is coded as 0; - as 1 bc of ASCII alphabet
+```
+
+```
+   (Intercept) h- d- l- b- j- f- n- a- i- e- m- c- k- g- o-
+1            1  1  1  0  1  0  0  1  1  0  0  1  0  1  1  0
+2            1  0  1  1  1  1  0  0  1  1  0  0  0  0  1  1
+3            1  1  0  1  1  0  1  0  1  0  1  0  0  1  0  1
+4            1  0  0  0  1  1  1  1  1  1  1  1  0  0  0  0
+5            1  1  1  0  0  1  1  0  1  0  0  1  1  0  0  1
+6            1  0  1  1  0  0  1  1  1  1  0  0  1  1  0  0
+7            1  1  0  1  0  1  0  1  1  0  1  0  1  0  1  0
+8            1  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1
+9            1  1  1  0  1  0  0  1  0  1  1  0  1  0  0  1
+10           1  0  1  1  1  1  0  0  0  0  1  1  1  1  0  0
+11           1  1  0  1  1  0  1  0  0  1  0  1  1  0  1  0
+12           1  0  0  0  1  1  1  1  0  0  0  0  1  1  1  1
+13           1  1  1  0  0  1  1  0  0  1  1  0  0  1  1  0
+14           1  0  1  1  0  0  1  1  0  0  1  1  0  0  1  1
+15           1  1  0  1  0  1  0  1  0  1  0  1  0  1  0  1
+16           1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+```
+
+## Example
+
+Can't do usual F-tests, so need different approach.
+
+- Suppose no significant effects and errors normally distributed.
+    - Estimated effects would be linear combos of errors and so also normal.
+- We can make a normal QQ plot of main effects.
+    - Idea: outliers represent something interesting happening (significant effects).
+        
+## Example
+
+```{r}
+par(mfrow=c(1,2))
+qqnorm(coef(mod5)[-1], pch=names(coef(mod5)[-1]))
+halfnorm(coef(mod5)[-1],labs=names(coef(mod5)[-1]))
+```
+
+## Example
+
+So we might further examine effects of `e` and `g`.
