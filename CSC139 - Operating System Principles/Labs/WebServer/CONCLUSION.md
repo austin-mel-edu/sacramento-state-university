@@ -151,7 +151,7 @@ Very efficient, widely used for producer-consumer problems.
 * Handles waiting and signaling automatically.
 * Semaphores can coordinate multiple producers and consumers easily.
 
-I would choose the *bold*Semaphore*bold* implementation for a real multi-threaded web server.
+I would choose the Semaphore implementation for a real multi-threaded web server.
 Reasons:
 * Threads block efficiently without consuming CPU.
 * Supports multiple concurrent producers and consumers.

@@ -75,6 +75,7 @@ void *client_thread(void *arg) {
     for (int i = 0; i < 5; i++) {
         Request req;
         req.id = client_id * 100 + i;
+        // HTTPS data simulation
         snprintf(req.data, 128, "Client %d -> Request %d", client_id, i);
 
         // Send request to server
@@ -115,6 +116,7 @@ void *server_thread(void *arg) {
         // Send response to client
         Request res;
         res.id = req.id;
+        // HTTPS data simulation
         snprintf(res.data, 128, "Processed response for %s", req.data);
         printf("[Server] Sending response: %s\n", res.data);
         enqueue_item(&responseQueue, res);
