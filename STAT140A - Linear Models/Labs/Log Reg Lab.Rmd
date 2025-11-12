@@ -1,0 +1,129 @@
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+# Lab: Logistic Regression
+
+## The Stock Market Data
+
+We will begin by examining some numerical and graphical summaries of
+the `Smarket` data, which is part of the `ISLR2` library. This
+data set consists of percentage returns for the S\&P 500 stock index
+over $1,250$ days, from the beginning of 2001 until the end of
+2005. For each date, we have recorded the percentage returns for each
+of the five previous trading days, `Lag1` through `Lag5`. We
+have also recorded `volume` (the number of shares traded on the previous day, in billions), `Today` (the percentage return on the date in question)  and `direction` (whether the market was `Up` or `Down` on this date). Our goal is to predict `direction` (a qualitative response) using the other features.
+
+```{r chunk1}
+library(car)
+library(ISLR2)
+names(Smarket)
+dim(Smarket)
+summary(Smarket)
+pairs(Smarket)
+```
+
+The `cor()` function produces a matrix that contains all of the pairwise correlations among the predictors in a data set. The first command below gives an error message because the `direction` variable is qualitative.
+
+```{r chunk2, error=TRUE}
+cor(Smarket)
+cor(Smarket[, -9])
+```
+
+As one would expect, the correlations between the lag variables and today's returns are close to zero. In other words, there appears to be little correlation between today's returns and previous days' returns. The only substantial correlation is between `Year` and `volume`. By plotting the data, which is ordered chronologically, we see that `volume` is increasing over time. In other words, the average number of shares traded daily increased from 2001 to 2005.
+
+```{r chunk3}
+attach(Smarket)
+plot(Volume)
+```
+
+
+## Logistic Regression
+
+Next, we will fit a logistic regression model in order to predict `direction` using `Lag1` through `Lag5` and `volume`. The `glm()` function  can be used to fit many types of generalized linear models, including logistic regression.
+ The syntax of the `glm()` function is similar to that of  `lm()`,  except that we must pass in the argument `family = binomial` in order to tell `R` to run a logistic regression rather than some other type of generalized linear model.
+
+
+```{r chunk4}
+glm.fits <- glm(
+    Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume,
+    data = Smarket, family = binomial
+  )
+summary(glm.fits)
+```
+
+The smallest $p$-value here is associated with `Lag1`. The negative coefficient for this predictor suggests that if the market had a positive return yesterday, then it is less likely to go up today. However, at a value of $0.15$, the $p$-value is still relatively large, and so there is no clear evidence of a real association between `Lag1` and `direction`. 
+
+Next we will briefly examine model diagnostics for influential observations and multicollinearity. Note that the vertical grouping seen here in the logistic regression diagnostics is due to the binary nature out the outcome variable. 
+
+```{r}
+plot(glm.fits, which=4)
+vif(glm.fits)
+```
+
+There are no concerns with VIF, and even the points with the highest value for Cook's distance have values below 0.01, so the model looks fine. 
+
+ We use the `coef()` function in order to access just the coefficients for this fitted model. We can also use the `summary()` function to access  particular aspects of the fitted model, such as the $p$-values for the coefficients.
+
+```{r chunk5}
+coef(glm.fits)
+summary(glm.fits)$coef
+summary(glm.fits)$coef[, 4]
+```
+
+
+
+The `predict()` function can be used to predict the probability that the market will go up, given values of the predictors. The `type = "response"` option tells `R` to output probabilities of the form $P(Y=1|X)$, as opposed to other information such as the logit. If no data set is supplied to the `predict()` function,
+then  the probabilities are computed for the training data that was used to fit the logistic regression model. Here we have printed only the first ten probabilities. We know that these values correspond to the probability of the market going up, rather than down, because the `contrasts()` function indicates that `R` has created a dummy variable with a 1 for `Up`.
+
+```{r chunk6}
+glm.probs <- predict(glm.fits, type = "response")
+glm.probs[1:10]
+contrasts(Direction)
+```
+
+In order to make a prediction as to whether the market will go up or down on a particular day, we must convert these predicted probabilities into class labels, `Up` or `Down`.
+The following two commands create a vector of class predictions based on whether the predicted probability of a market increase is greater than or less than $0.5$.
+
+```{r chunk7}
+glm.pred <- rep("Down", 1250)
+glm.pred[glm.probs > .5] = "Up"
+```
+
+The first command creates a vector of 1,250  `Down` elements. The second line transforms to `Up` all of the elements for which the predicted probability of a market increase exceeds $0.5$. Given these predictions, the `table()` function can be used to produce a confusion matrix, which shows us how many observations were correctly or incorrectly classified.
+
+```{r chunk8}
+table(glm.pred, Direction)
+(507 + 145) / 1250
+mean(glm.pred == Direction)
+```
+
+The diagonal elements of the confusion matrix indicate correct predictions, while the off-diagonals represent incorrect predictions. Hence our model correctly predicted that the market would go up on $507$ days and that it would go down on $145$ days, for a total of $507+145 = 652$ correct predictions. The `mean()` function can be used to compute the fraction of days for which the prediction was correct. In this case, logistic regression correctly predicted the movement of the market  $52.2$ \% of the time.
+
+We recall that the logistic regression model had very underwhelming $p$-values associated with all of the predictors, and that the smallest $p$-value, though not very small, corresponded to `Lag1`. Perhaps by removing the variables that appear not  to be helpful in
+predicting
+`direction`, we can obtain a more effective model. After all, using predictors that have no relationship with the response tends to cause a deterioration in the test error rate (since such predictors cause an increase in variance without a corresponding decrease in bias), and so removing such predictors may in turn yield an improvement.
+ Below we have refit the logistic regression using just `Lag1` and `Lag2`, which seemed to have the highest predictive power in the original logistic regression model.
+
+```{r chunk12}
+glm.fits <- glm(Direction ~ Lag1 + Lag2, data = Smarket,
+    family = binomial)
+glm.probs <- predict(glm.fits, type = "response")
+glm.pred <- rep("Down", 252)
+glm.pred[glm.probs > .5] <- "Up"
+table(glm.pred, Direction)
+mean(glm.pred == Direction, na.rm=TRUE)
+```
+
+Now the results appear to be a little better: $58\%$ of the daily movements have been correctly predicted.
+
+Suppose that we want to predict the returns associated with particular values of `Lag1` and `Lag2`. In particular, we want to predict `direction` on a day when `Lag1` and `Lag2` equal 1.2 and~1.1, respectively, and  on a day when they equal  1.5 and $-$0.8.
+We do this using the `predict()` function.
+
+```{r chunk13}
+predict(glm.fits,
+    newdata =
+      data.frame(Lag1 = c(1.2, 1.5),  Lag2 = c(1.1, -0.8)),
+    type = "response"
+  )
+```

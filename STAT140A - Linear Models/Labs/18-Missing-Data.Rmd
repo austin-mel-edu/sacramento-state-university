@@ -1,0 +1,293 @@
+---
+title: "Missing Data"
+author: "Prof. Lauren Perry"
+output:
+  ioslides_presentation: default
+  beamer_presentation: default
+classoption: aspectratio=169
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set()
+
+library(faraway)
+```
+
+## Missing Data
+
+Missing data occur when some of the values are missing.
+
+-   This is very common!
+-   We can remove those observations... but often that means losing a lot of data.
+
+## Types of Missing Data
+
+**Missing Cases**
+
+- Complete case $(x_i, y_i)$ is missing.
+- Always missing unobserved data from the population.
+- Generally not an issue.
+- Can be an issue (bias) if there's some *systematic* reason for our inability to sample certain cases.
+    - May be able to make corrections with enough info about mechanism for missingness.
+    
+## Types of Missing Data
+
+**Incomplete Values**
+
+- These can occur when an experiment ends before all end points are observed.
+    - E.g., survival or reliability analysis 
+- These can also occur due to individuals dropping out partway through an experiment. 
+- It is also possible to have observations where early values are unobserved.
+- Such cases are said to be *censored*.
+
+## Types of Missing Data
+
+**Missing Values**
+
+- For a given case, some components are measured by not others. 
+- This chapter addresses the missing values problem. 
+
+## Types of Missingness 
+
+**Missing completely at random** (MCAR)
+
+- the probability a value is missing is the same for all cases
+    - deleting cases with missing values will remove information, but cause no bias
+      
+## Types of Missingness 
+
+**Missing at random** (MAR)
+
+- the probability a value is missing depends on some known mechanism
+    - need to make some adjustments before deleting
+
+## Types of Missingness 
+**Missing not at random** (MNAR)
+
+- the probability a value is missing depends on some unobserved variable or on what value would have been observed
+    - eg, people refusing to answer a survey because they have something to hide
+
+Dealing with MNAR is difficult/impossible to do accurately, so we focus on MAR problems. 
+
+## "Fixing" Missing Data
+
+-   Remove observations with (any amount of) missing data.
+-   Fill in or *impute* the missing values.
+-   Missing value correlation method.
+-   Maximum likelihood methods.
+
+## Deletion: Chicago Insurance Data
+
+Some points have been removed at random:
+
+```{r}
+data(chmiss)
+head(chmiss, 10)
+```
+
+***
+
+```{r}
+summary(chmiss)
+```
+
+***
+
+```{r}
+rowSums(is.na(chmiss)) # missing obs per row
+```
+
+***
+
+```{r}
+image(is.na(chmiss),axes=FALSE,col=gray(1:0))
+axis(2, at=0:5/5, labels=colnames(chmiss))
+axis(1, at=0:46/46, labels=row.names(chmiss),las=2)
+```
+
+***
+
+```{r message=FALSE}
+library(DataExplorer)
+plot_missing(chmiss, missing_only = TRUE)
+```
+
+## Deletion: Chicago Insurance Data
+
+- There is at most one missing obs per row.
+- Removing these obs would mean deleting 20 of our 47 observations.
+
+## The Model, Nothing Missing
+
+```{r}
+data(chredlin, package="faraway")
+modfull <- lm(involact ~ ., chredlin)
+summary(modfull)$coefficients
+```
+
+## The Model, Data Missing
+
+```{r results=F}
+mod1 <- lm(involact ~ ., chmiss)
+summary(mod1)
+```
+
+```
+Coefficients:
+Estimate Std. Error t value Pr(>|t|)    
+(Intercept) -1.116483   0.605761  -1.843 0.079475 .  
+race         0.010487   0.003128   3.352 0.003018 ** 
+fire         0.043876   0.010319   4.252 0.000356 ***
+theft       -0.017220   0.005900  -2.918 0.008215 ** 
+age          0.009377   0.003494   2.684 0.013904 *  
+income       0.068701   0.042156   1.630 0.118077    
+
+Residual standard error: 0.3382 on 21 degrees of freedom
+  (20 observations deleted due to missingness)
+Multiple R-squared:  0.7911,	Adjusted R-squared:  0.7414 
+F-statistic: 15.91 on 5 and 21 DF,  p-value: 1.594e-06
+```
+
+## Deletion: Chicago Insurance Data
+
+- `lm` function in R automatically removes any observations with anything missing. 
+- Reduction in data has resulted in higher standard errors.
+    - (Estimates are less precise.)
+- Deleting observations is easy and avoids possible bias introduced by other methods.
+    - Downside is information loss. 
+
+# Single Imputation
+
+## Mean Imputation
+
+```{r}
+cmeans <- apply(chmiss, 2, mean, na.rm=TRUE)
+cmeans
+mchm <- chmiss
+for(i in c(1, 2, 3, 4, 6)){ # 5 is the outcome variable
+  mchm[is.na(chmiss[,i]),i] <- cmeans[i]
+}
+```
+
+Note: we don't impute values for the outcome because this is the variable we're trying to model.
+
+## Refitting the Model
+
+```{r results=F}
+mod2 <- lm(involact ~ ., mchm)
+summary(mod2)
+```
+
+```
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)  
+(Intercept)  0.070802   0.509453   0.139  0.89020   
+race         0.007117   0.002706   2.631  0.01224 * 
+fire         0.028742   0.009385   3.062  0.00402 **
+theft       -0.003059   0.002746  -1.114  0.27224   
+age          0.006080   0.003208   1.895  0.06570 . 
+income      -0.027092   0.031678  -0.855  0.39779  
+
+Residual standard error: 0.3841 on 38 degrees of freedom
+  (3 observations deleted due to missingness)
+Multiple R-squared:  0.682,	Adjusted R-squared:  0.6401 
+F-statistic:  16.3 on 5 and 38 DF,  p-value: 1.409e-08
+```
+
+## Refitting the Model
+
+- Notice that theft and age are no longer significant.
+- Regression coefs all closer to zero than before.
+
+## Mean Imputation
+
+- Bias/Variance Tradeoff
+    - Reduction in variance
+    - Increase in bias (coefficients toward zero)
+    - May not be worth it unless the proportion of filled values is small
+    
+## Using Regression Methods
+
+We can also use regression-based methods to *predict* the missing values of the covariates:
+
+```{r}
+chmiss[is.na (chmiss$fire) , ]
+race.miss <- lm (fire ~ race + theft + age + income, chmiss)
+predict(race.miss, chmiss[is.na(chmiss$fire),])
+```
+
+## Using Regression Methods
+
+How do our predicted values compare to the actual values? 
+
+```{r}
+data(chredlin)
+chredlin$fire[is.na(chmiss$fire)]
+```
+
+- This method also introduces some bias toward zero in coefs.
+- Tends to reduce variance.
+- This method works better the more collinear the predictors are.
+
+# Multiple Imputation
+
+## Multiple Imputation
+
+Goal: maintain information while reducing the bias caused by single imputation methods
+
+- Single imputation tends to reduce variability, increasing bias. 
+- Idea: re-include that error variation over multiple iterations.
+
+## Multiple Imputation
+
+- One approach is implemented in the `Amelia` package in R.
+    - A bootstrap EM (expectation-maximization) algorithm
+- Generally assumes data is multivariate normal
+    - May need to log-transform heavily skewed variables.
+    
+## Multiple Imputation
+
+```{r results=FALSE, message=FALSE}
+require(Amelia)
+set.seed(0)
+chimp <- amelia(chmiss, m=25)
+```
+
+- `m` is the number of imputations. 
+- We should include the entire dataframe, even if we do not intend to use all the variables in our model.
+- Next, we will fit a linear model to each of the 25 imputed datasets and store the results.
+
+## Multiple Imputation
+
+```{r}
+betas <- NULL
+ses <- NULL
+for(i in 1:chimp$m){
+  lmod <- lm(involact ~ race+fire+theft+age, chimp$imputations[[i]])
+  betas <- rbind(betas, coef(lmod))
+  ses <- rbind(ses, coef(summary(lmod))[,2])
+}
+```
+
+## Multiple Imputation
+
+We can combine the results to get estimates of the coefficients and their standard errors.
+
+- Average over the imputations for $\beta_j$: $$\hat{\beta}_j = \frac{1}{m}\sum_{i}\hat{\beta}_{ij}$$
+- Combined standard errors calculated as $$s_j^2 = \frac{1}{m}\sum_i s_{ij}^2 + \text{var}(\hat{\beta}_j)(1+1/m)$$
+
+## Multiple Imputation
+
+The `mi.meld` function does this for us:
+
+```{r}
+(cr <- mi.meld(q=betas,se=ses))
+```
+
+## Multiple Imputation
+
+And the t-statistics are
+
+```{r}
+cr$q.mi/cr$se.mi
+```

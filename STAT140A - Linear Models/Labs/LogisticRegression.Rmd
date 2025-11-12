@@ -1,0 +1,342 @@
+---
+title: 'Logistic Regression'
+author: "Dr. Lauren Perry"
+output:
+  ioslides_presentation: default
+  beamer_presentation: default
+classoption: aspectratio=169
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR2)
+```
+
+# Classification
+
+## Examples of Classification Problems
+
+1. A person arrives at the emergency room with a set of symptoms that could possibly be attributed to one of three medical conditions. Which of the three conditions does the individual have?
+
+2. An online banking service must be able to determine whether or not a transaction being performed on the site is fraudulent, on the basis of the user’s IP address, past transaction history, and so forth.
+
+3. On the basis of DNA sequence data for a number of patients with and without a given disease, a biologist would like to figure out which DNA mutations are deleterious (disease-causing) and which are not.
+
+## Classification Problems
+
+- The data is going to look very similar to the data used in regression. 
+- However, now $Y$ will be *categorical*.
+
+## Classification: The `Default` Data
+
+This is a simulated dataset with variables 
+
+- `default`, whether an individual defaulted
+- `balance`, credit card balance
+- `income`
+
+## Classification: The `Default` Data
+
+```{r}
+par(mfrow=c(1,2))
+boxplot(Default$balance ~ Default$default, xlab="Default", ylab="Balance")
+boxplot(Default$income ~ Default$default, xlab="Default", ylab="Income")
+```
+
+## Why not Linear Regression?
+
+Why not just code the categorical output as numbers?
+
+That is, for three diagnoses: `stroke`, `overdose`, and `epileptic seizure`, let 
+
+\[
+Y = 
+\begin{cases}
+1 \quad\text{if stroke} \\
+2 \quad\text{if overdose} \\
+3 \quad\text{if epileptic seizure}
+\end{cases}
+\]
+
+What problems might this cause? 
+
+## Why not Linear Regression?
+
+What are we assuming about the diagnoses that's different if we let 
+
+\[
+Y = 
+\begin{cases}
+1 \quad\text{if overdose} \\
+2 \quad\text{if stroke} \\
+3 \quad\text{if epileptic seizure}
+\end{cases}
+\]
+
+## What if $Y$ only has two categories? 
+
+Can we use a dummy variable?
+
+Suppose we are only interested in whether a patient has had a stroke. $$Y = I(\text{stroke})$$
+
+## What if $Y$ only has two categories?
+
+- This seems reasonable: we could just run the regression and predict
+    - stroke if $\hat{Y} > 0.5$
+    - no stroke otherwise
+- This works out ok, but we'd like to be able interpret the output as the *probability* of a stroke.
+    - However, in this scenario $\hat{Y}$ can take values outside of $[0,1]$.
+
+# Logistic Regression
+
+## Logistic Regression
+
+Logistic regression will allow us to examine the case where the outcome variable has two distinct categories.
+
+-   The outcome $Y$ will be constructed as a dummy variable.
+-   Rather than modeling the response directly, logistic regression models the *probability* of falling into a particular category.
+    - E.g., $P(\text{default}=\text{yes}|\text{balance})$
+-   Then we might use, say, $\hat{Y} = 0.5$ as the cutoff point for predicting one category or the other.
+
+## The Logistic Model
+
+How do we model the relationship between this *probability* and the outcome $X$? $$P(Y=1|X) = p(X)$$
+
+## Example: Default Data
+
+What if we modeled $p(X) = X\beta$
+
+```{r}
+summary(Default$default)
+def <- as.numeric(Default$default)-1 # 0 is no, 1 is yes
+```
+
+## Example: Default Data
+
+```{r}
+lm(def ~ balance, Default)
+```
+
+- Problem: balances close to 0 or very large result in predicted values outside of [0,1]
+- For linear regression, $\hat{y}$ is continuous on $(-\infty, \infty)$.
+
+## Link Functions
+
+How do we get from a probability to an arbitrary real number?
+
+- Suppose we have probabilities $p_i \in [0,1]$
+- Link function $g$ takes values $p_i$ and converts them to real numbers $\eta_i = X\beta$
+- Now $\eta_i \in (-\infty, \infty)$ and we can run a regression using $\eta$ as the output.
+
+## Link Functions
+
+Properties:
+
+- For these to be useful, $\eta_i=g(p_i)$ needs to have an inverse.
+- We require $g$ to be monotone
+- For this setting, we need $g^{-1}(\eta)$ to produce values in $[0,1]$.
+
+## Logit Link
+
+In this setting, the most popular choice of link function is the *logit*:
+
+$$\eta = \log\left(\frac{p}{1-p}\right)$$
+or, equivalently, 
+$$p = \frac{e^{\eta}}{1+e^{\eta}}$$
+
+## The Logit Function
+
+```{r}
+eta = seq(-6,6,length.out=100)
+p = exp(eta)/(1+exp(eta))
+plot(eta, p, type='l')
+```
+
+## The Logistic Model
+
+In logistic regression, the logit link takes on the roll of the *logistic function* $$p(X) = \frac{\exp(\beta_0 + \beta_1X)}{1+\exp(\beta_0 + \beta_1X)}$$
+
+## Odds
+
+-   We can rewrite $$\frac{p(X)}{1-p(X)} = \exp(\beta_0 + \beta_1X)$$
+    -   The quantity $p(X)/[1-p(X)]$ is called the *odds*
+-   Odds can take on any values on $[0, \inf)$.
+
+## Odds
+
+-   Ex: With an odds of 1/4, on avg 1 in 5 people will default.
+    -   $p(X) = 0.2 \rightarrow 0.2/(1-0.2) = 1/4$
+-   Ex: With an odds of 9, on average 9 in 10 people will default.
+    -   $p(X) = 0.9 \rightarrow 0.9/(1-0.9) = 9$
+
+## The Logistic Model
+
+$$p(X) = \frac{\exp(X\beta)}{1+\exp(X\beta)}$$
+
+can be written as
+
+$$\frac{p(X)}{1-p(X)} = \exp(X\beta)$$
+
+and finally as
+
+$$\log\left(\frac{p(X)}{1-p(X)}\right) = X\beta$$
+
+where the LHS is the *log odds* or *logit* function.
+
+## The Logistic Model
+
+$$\log\left(\frac{p(X)}{1-p(X)}\right) = X\beta$$
+
+-   When we run a logistic regression, predicted values are *log odds*.
+-   This makes interpretation a little more involved!
+-   If we increase $X$ by one unit, the log odds change by $\beta_1$.
+    -   Or we can say it multiplies the odds by $e^{\beta_1}$.
+    
+## Maximum Likelihood
+
+- For linear regression, we used *least squares* to estimate the regression parameters.
+- In logistic regression, we use *maximum likelihood*.
+    - Select the parameter values with maximize the *likelihood*.
+    
+## Maximum Likelihood
+
+$$\eta_i = X\beta$$
+
+$$p_i = \frac{e^{\eta_i}}{1+e^{\eta_i}}$$
+
+Show that the log likelihood function is 
+$$l(\beta) = \sum_{i=1}^n[y_i\eta_i - \log(1+e^{\eta_i})]$$
+
+## Example: Logistic Regression in R
+
+```{r echo=T}
+glm(default ~ balance + income, family=binomial, data=Default)
+```
+
+------------------------------------------------------------------------
+
+```{r}
+mod1 <- glm(default ~ balance + income, family=binomial, data=Default)
+summary(mod1)
+```
+
+## Making Predictions
+
+$$\hat{p}(X) = \frac{\exp(X\hat{\beta})}{1+\exp(X\hat{\beta})}$$
+
+and we plug in values for $X$.
+
+-   We can also plug in values for $X$ into the odds or log odds formulations to predict those values.
+
+## Example
+
+```{r results=FALSE}
+summary(glm(default ~ ., family=binomial, data=Default))
+```
+
+```
+Coefficients: Estimate Std. Error z value Pr(>|z|)
+(Intercept) -1.087e+01  4.923e-01 -22.080  < 2e-16 ***
+studentYes  -6.468e-01  2.363e-01  -2.738  0.00619 **
+balance      5.737e-03  2.319e-04  24.738  < 2e-16 ***
+income       3.033e-06  8.203e-06   0.370  0.71152
+```
+
+-   Negative coefficient suggests students less likely to default than non students.
+-   However, a model with *only* `student` has a positive coefficient. Why?
+
+***
+
+![](images/4_3.pdf)
+
+-   Overall average default rates are higher for students.
+-   As a function of credit card balance, default rates are *lower* for students.
+    - So students are riskier than non-students *on average*, but a student is less risky than a non-student with the same credit card balance. 
+    
+## Deviance
+
+The deviance allows us to compare models.
+
+- Smaller deviance = better model
+
+$$D = -2\sum_{i-1}^n\hat{p}_i\text{logit}(\hat{p}_i) + \log(1-\hat{p}_i)$$
+
+This is the same idea as $RSS = \sum_{i=1}^n(y_i - \hat{y}_i)^2$ in linear regression.
+
+## Residuals
+
+In logistic regression, $$\sum r_i^2 = D$$
+
+## Assumptions
+
+- Dependent variable is binary
+- Observations are independent
+- Minimal multicollinearity 
+- Linearity of independent variables and log odds
+- Typically requires relatively large sample size
+
+## Multinomial Logistic Regression 
+
+What if the response variable has more than two outcomes, $K > 2$?
+
+Select one class to serve as the *baseline*. WLOG, we choose class $K$. Then the model becomes
+$$ \text{P}(Y=k | X = x) = \frac{\exp(X\beta_k)}{1 + \sum_{l=1}^{K-1}\exp(X\beta_k)} $$
+for $p$ predictor variables and $k = 1, \dots, K-1$ and 
+$$ \text{P}(Y=K | X = x) = \frac{1}{1 + \sum_{l=1}^{K-1}\exp(X\beta_l)}. $$
+
+## Multinomial Logistic Regression 
+
+Then for $k = 1, \dots, K-1$, $$\log\left(\frac{\text{P}(Y=k | X = x)}{\text{P}(Y=K | X=x)}\right) = \sum_{i=0}^p \beta_{ki}x_i$$
+
+- Baseline is unimportant from a modeling perspective, but it does serve as the point of comparison for other classes.
+- Say `seizure` is our baseline for some medical classification problem and let $k$ represent `stroke`.
+    - Then the model gives the log odds of `stroke` versus `seizure`. 
+    
+## Softmax Coding
+
+Another way to do the estimation for a multinomal logistic regression is, for $k = 1, 2, \dots, K$
+$$ \text{P}(Y=k | X = x) = \frac{\exp(\sum_{i=0}^p \beta_{ki}x_i)}{\sum_{l=1}^{K}\exp(\sum_{i=0}^p \beta_{ki}x_i)} $$
+which requires the estimation of coefficients for all $K$ classes, instead of $K-1$ classes. 
+
+Then the log odds ratio between *any two classes* $k$ and $k'$ is 
+$$ \log\left(\frac{\text{P}(Y=k | X = x)}{\text{P}(Y=k' | X=x)}\right) = \sum_{i=0}^p(\beta_{ki}- \beta_{k'i})x_i$$
+
+## Multinomial Logistic Regression in R
+
+```{r echo=T, eval=F}
+library(nnet)
+data(penguins, package = "palmerpenguins")
+penguins$species <- relevel(penguins$species, ref="Adelie")
+mod2 <- multinom(species ~ bill_length_mm + flipper_length_mm 
+                 + body_mass_g + sex, data = penguins)
+summary(mod2)
+```
+
+***
+
+```{r echo=F, eval=F}
+library(nnet)
+data(penguins, package = "palmerpenguins")
+penguins$species <- relevel(penguins$species, ref="Adelie")
+mod2 <- multinom(species ~ bill_length_mm + flipper_length_mm + body_mass_g + sex, data = penguins)
+summary(mod2)
+```
+
+```
+Call:
+multinom(formula = species ~ bill_length_mm + flipper_length_mm + 
+    body_mass_g + sex, data = penguins)
+
+Coefficients:
+          (Intercept) bill_length_mm flipper_length_mm body_mass_g   sexmale
+Chinstrap   -114.8867      3.6407536        0.02945164 -0.01248832 -10.84175
+Gentoo      -141.8286      0.7009754        0.33514983  0.01173179 -15.39547
+
+Std. Errors:
+          (Intercept) bill_length_mm flipper_length_mm body_mass_g    sexmale
+Chinstrap 0.028765022      1.0261304         0.1411880 0.006587535 0.05226856
+Gentoo    0.009824929      0.7616873         0.1561736 0.008052310 0.04375471
+
+Residual Deviance: 7.66202 
+AIC: 27.66202
+```
