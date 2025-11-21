@@ -1,0 +1,110 @@
+---
+title: "Project 1"
+author: "Austin Melendez"
+date: "2025-09-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# STAT 140A PROJECT ONE
+## Austin Melendez
+### 09/30/2025
+
+```{r}
+#install.packages("readxl")
+library(readxl)
+concrete_data <- read_excel("C:/Users/Austin/Desktop/Concrete_Data.xls")
+
+head(concrete_data)
+```
+## The Dataset
+The dataset I am using for this project contains data taken on the compressive strength of concrete. This data [from the UCI Machine Learning Repository.](https://archive.ics.uci.edu/dataset/165/concrete+compressive+strength) 
+
+This dataset contains 1,030 observations with 8 predictor (input) variables and 1 target (output) variable.
+
+```{r}
+names(concrete_data)
+```
+The predictor variables represent the components and conditions of different concrete mixtures: Cement, Blast Furnace Slag, Fly Ash, Water, Superplasticizer, Coarse Aggregate, Fine Aggregate, and Age (in days). 
+
+The target variable is Concrete Compressive Strength (measured in MPa).
+ 
+The goal of predictive modeling on this dataset is to build a regression model that, given the mixture proportions and age of curing, can accurately predict the compressive strength of the concrete.
+
+## Summaries of the Data
+Let's first investigate the data provided in our dataset to determine if we need to take any actions to ensure the data is use-able in a linear regression model. Our column titles are pretty long and descriptive right now, lets shorten them so we can easily work with them in the future.
+
+```{r}
+concrete_data_clean <- concrete_data
+
+colnames(concrete_data_clean) <- c(
+  "Cement",
+  "Slag",
+  "FlyAsh",
+  "Water",
+  "Superplasticizer",
+  "CoarseAgg",
+  "FineAgg",
+  "Age",
+  "Strength"
+)
+```
+Let's take a look at a sumarry of the data.
+```{r}
+summary(concrete_data_clean)
+```
+
+From this we can see the predictor variable with the smallest range is `Superplasticizer`. Since it only has a range of 32.2, we'll have to keep an eye on it to see if it has a negative impact on our model and requires additional attention.
+
+Next, lets look at the calculated correlation values between each predictor variable.
+```{r}
+round(cor(concrete_data_clean$Strength, concrete_data_clean[, 1:8]), 4)
+```
+
+This shows us that none of our predictor variables are highly correlated at all. In fact, four of our predictor variables are negatively correlated.
+
+Lastly, lets plot the data to get an understanding of the shapes of the data for each variable.
+```{r}
+plot(concrete_data_clean)
+```
+
+Luckily, this dataset does not have any missing data or categorical variables we need to remove. All the variables we are planning to use as predictors are already numerical values.
+
+## Regression Models
+Let's start by creating a model using all the input variables.
+```{r}
+mod <- lm(Strength ~ ., data=concrete_data_clean)
+```
+
+Next let's look at some graphs of the model's residuals 
+and leverage.
+```{r}
+plot(mod)
+```
+
+The residual plots look remarkably good. There is a slight non-linearity in the model line happening in the residuals versus fitted values plot, but it doesn't indicate direct violations of any of our model assumptions. The overall shape of the data looks consistent and normally distributed. 
+
+If we we're to identify any problems using the residual plots here, such as a high residual value off of our data grouping in the Q-Q plot, we would want to try some transformations on `Strength` or some of the predictor variables. Since I am unable to identify any issues by looking at our residuals plots, we'll move on.
+```{r}
+summary(mod)
+```
+
+From this summary, we can determine that the model is pretty useful. Our $R^2$ value could be improved, since it is only at $0.6155$.
+Meaning only ~62% of our data is captured accurately by our model. However, our F-statistic is relatively high which means our model's p-value is very low at 
+$2.2 \times 10^{-16}$. This indicates that the overall model is useful!
+
+Additionally, all the predictor variables are statistically significant below the 5% level. Each p-value is less than $0.05$. This tells us that the model overall is useful in predicting cement compressive strength and all the predictors in the model are useful.
+
+If some of the predictors in my model were above the 5% level, meaning they were non-significant, I would try to make smaller models and remove non-significant variables while keeping the $R^2$ value above its value in the original model. If removing a single variable is not enough, we can also compare models with several parameters removed.
+
+## Conclusion
+After analysis of this data, several patterns have emerged. The regression model indicates that multiple input variables play a statistically significant role in predicting compressive strength. Cement content shows the strongest positive influence to higher compressive strength. 
+
+Slag, Fly Ash, Water, Superplasticizer, and Age are also statistically significant, though the direction and magnitude of their effects vary. For example, Fly Ash and Water tend to reduce compressive strength, while Slag and Superplasticizer increase it. Age is particularly important: as concrete cures longer, its strength rises substantially.
+
+Interestingly, Coarse Aggregate and Fine Aggregate had comparatively weak or marginal effects, with p-values indicating that their contribution to the model is less certain. This suggests that while aggregates are structurally important, their variation in this dataset does not explain much of the observed differences in strength.
+
+Overall, the model highlights that concrete strength depends most strongly on cement content and curing age, with additional materials (slag, fly ash, superplasticizer) modifying the performance, and aggregates contributing less predictive value.

@@ -1,0 +1,141 @@
+---
+title: "hw9"
+author: "Austin Melendez"
+date: "2025-11-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(car)
+library(ISLR2)
+```
+
+## 1
+Using the `Weekly` data produce some numerical and graphical summaries. Do there appear to be any patterns?
+
+```{r}
+data(Weekly)
+
+summary(Weekly)
+```
+Looking at the data summary, our data is spread out between 1990 and 2010. Each `Lag#` variable has a spread of data, no variable looks to have a worrisome range. Additionally, the `Direction` variable has a good mix of both up and down and does not have an overwhelming skew.
+
+```{r}
+cor(Weekly[, c("Lag1","Lag2","Lag3","Lag4","Lag5","Volume","Today")])
+```
+There aren't any super strongly correlated variables in the dataset, infact most of the variables are ever so slightly negatively correlated with eachother.
+
+```{r}
+plot(Weekly)
+```
+
+## 2
+Perform a logistic regression using `Direction` as the response and theg five `lag` variables plus `volume` as predictors. Do any of the predictors appear to be statistically significant?
+
+```{r}
+mod <- glm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data = Weekly, family = binomial)
+
+summary(mod)
+```
+
+According to our logistic regression model using those predictors, the `Lag2` variable is statistically signigicant at the 0.05 level.
+
+## 3 
+Examine the model diagnostics for your logistic regression model.
+
+```{r}
+plot(mod)
+```
+
+The residuals vs fitted plot shows that there are two different groups with their own constant variance.The Q-Q plots show a strong pattern that looks good and does not deviate from  the line significantly at the tails.
+
+## 4
+Compute the confusion matrix and overall fraction of correct predictions
+
+```{r}
+prob_full <- predict(mod, type = "response")
+pred_full <- ifelse(prob_full > 0.5, "Up", "Down")
+
+tab_full <- table(Predicted = pred_full, Actual = Weekly$Direction)
+
+print(tab_full)
+```
+As you can see, we are incorrectly classifying a lot of `Down` cases as `Up` instead. But we are pretty accurate when it comes to accurately classifying `Up` as `Up`.
+
+```{r}
+TP <- tab_full["Up","Up"]
+FP <- tab_full["Up","Down"]
+TN <- tab_full["Down","Down"]
+FN <- tab_full["Down","Up"]
+cat("TP:",TP," FP:",FP," TN:",TN," FN:",FN,"\n")
+```
+Our model classified 557 `Up` labels correctly (true positive), it classified 430 `Down` labels incorrectly as `Up` (false positive), it classified 54 `Down` labels correctly (true negative), and classified 48 `Up` labels incorrectly as `Down`.
+
+```{r}
+acc <- sum(diag(tab_full)) / sum(tab_full)
+round(acc, 4)
+```
+Due to our high false positive, we are only correctly classifying 56% of our data correctly.
+
+## 5
+Fit the logistic regression model with Lag2 as the only predictor. Compute teh confusion matrix and overall fraction of correct predictions. How does this model compare?
+
+```{r}
+lag2_mod <- glm(Direction ~ Lag2, data = Weekly, family = binomial)
+summary(lag2_mod)
+```
+With only the `Lag2` predictor in the model it is no longer significant.
+
+```{r}
+prob_lag2 <- predict(lag2_mod, type = "response")
+pred_lag2 <- ifelse(prob_lag2 > 0.5, "Up", "Down")
+
+tab_lag2 <- table(Predicted = pred_lag2, Actual = Weekly$Direction)
+
+print(tab_lag2)
+```
+Our confusion matrix looks about the same! We've actually increased our false positive rate by nearly 20 observations.
+
+```{r}
+TP <- tab_lag2["Up","Up"]
+FP <- tab_lag2["Up","Down"]
+TN <- tab_lag2["Down","Down"]
+FN <- tab_lag2["Down","Up"]
+cat("TP:",TP," FP:",FP," TN:",TN," FN:",FN,"\n")
+```
+```{r}
+acc2 <- sum(diag(tab_lag2)) / sum(tab_lag2)
+round(acc2, 4)
+```
+Like our original model, we are only correctly classifying 56% of our data correctly.
+
+## 6 
+Provide at least one way to interpret the coefficient associated with Lag2 in your model.
+
+```{r}
+coef_lag2 <- coef(lag2_mod)["Lag2"]
+odds_ratio_lag2 <- exp(coef_lag2)
+round(coef_lag2,4)
+```
+$0.0628$ is the Lag2 coefficiant (log-odds).
+
+```{r}
+round(odds_ratio_lag2,4)
+```
+Therefore, the calcualted odds ratio for a 1-unit increase in Lag2 is $1.0648$
+
+```{r}
+se <- sqrt(vcov(lag2_mod)["Lag2","Lag2"])
+ci_low <- exp(coef_lag2 - 1.96*se)
+ci_high <- exp(coef_lag2 + 1.96*se)
+
+round(ci_low,4)
+round(ci_high,4)
+```
+Our 95% CI for odds ratio of `Lag2` is [1.0112, 1.1213]
+
+Holding other variables constant, a one-point higher `Lag2` is associated with 6.48% increase in the odds of an `Up` week.
