@@ -1,0 +1,90 @@
+---
+title: "hw3"
+author: "Austin Melendez"
+date: "02/18/26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Section 4.8: Exercises 4, 5, 8, 12
+
+## Exercise 4
+### A
+```{r}
+
+```
+
+### B
+```{r}
+
+```
+
+### C
+```{r}
+
+```
+
+### D
+```{r}
+
+```
+
+### E
+```{r}
+
+```
+
+## Exercise 5
+### A
+```{r}
+
+```
+
+### B
+```{r}
+
+```
+
+### C
+```{r}
+
+```
+
+### D
+```{r}
+
+```
+## Exercise 8
+
+```{r}
+
+```
+
+## Exercise 12
+### A
+```{r}
+
+```
+
+### B
+```{r}
+
+```
+
+### C
+```{r}
+
+```
+
+### D
+```{r}
+
+```
+
+### E
+```{r}
+
+```

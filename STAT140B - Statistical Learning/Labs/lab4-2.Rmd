@@ -1,0 +1,61 @@
+---
+title: "lab4-2"
+author: "Austin Melendez"
+date: "2026-02-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Section 4.8: Exercises 14, 16
+
+## Exercise 14
+### A
+```{r}
+
+```
+
+### B
+```{r}
+
+```
+
+### C
+```{r}
+
+```
+
+### D
+```{r}
+
+```
+
+### E
+```{r}
+
+```
+
+### F
+```{r}
+
+```
+
+### G
+```{r}
+
+```
+
+### H
+```{r}
+
+```
+
+## Exercise 16
+
+```{r}
+
+```
+
+
