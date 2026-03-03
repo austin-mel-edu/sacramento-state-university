@@ -1,0 +1,186 @@
+---
+title: "lab4-1"
+author: "Austin Melendez"
+date: "2026-02-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Section 4.8: Exercises 13 & 15
+
+## Exercise 13
+
+### A
+
+```{r}
+library(ISLR2)
+library(ggplot2)
+data("Weekly")
+
+summary(Weekly)
+
+
+plot(Weekly)
+```
+There seems to be a good spread of data across 20 years. Nothing looks too crazy.
+
+### B
+```{r}
+log.fit <- glm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data = Weekly, family = binomial)
+
+summary(log.fit)
+```
+The variable `Lag2` seems to be statistically significant at the 0.05 level.
+
+### C
+```{r}
+log.prob <- predict(log.fit, type = "response")
+log.pred <- ifelse(log.prob > 0.5, "Up", "Down")
+table(Predicted = log.pred, Actual = Weekly$Direction)
+
+mean(log.pred == Weekly$Direction)
+```
+This logistic regression has a tendency to over predict the `Up` category and rarely predict `Down`. It therefore frequently miss classifies the `Down` class as being `Up`.
+
+### D
+```{r}
+train <- ( Weekly$Year <= 2008 )
+
+log.fit2 <- glm(Direction ~ Lag2, data=Weekly, family=binomial, subset=train)
+log.prob2 <- predict(log.fit2, newdata=Weekly[!train,], type="response")
+log.pred2 <- ifelse(log.prob2 > 0.5, "Up", "Down")
+
+table(Predicted = log.pred2, Actual = Weekly$Direction[!train])
+mean(log.pred2 == Weekly$Direction[!train])
+```
+The model using train/test data split is more accurate, but it still over classifies the `Up` class. However the model accuracy has improved from $56.10%$ to $62.50%$.
+
+### E
+```{r}
+library(MASS)
+lda.fit <- lda(Direction ~ Lag2, data=Weekly, subset=train)
+lda.pred <- predict(lda.fit, Weekly[!train,])
+table(Predicted = lda.pred$class, Actual = Weekly$Direction[!train])
+mean(lda.pred$class == Weekly$Direction[!train])
+```
+### F
+```{r}
+qda.fit <- qda(Direction ~ Lag2, data=Weekly, subset=train)
+qda.pred <- predict(qda.fit, Weekly[!train,])
+table(Predicted = qda.pred$class, Actual = Weekly$Direction[!train])
+mean(qda.pred$class == Weekly$Direction[!train])
+```
+### G
+```{r}
+library(class)
+train.X <- as.matrix(Weekly$Lag2[train])
+test.X  <- as.matrix(Weekly$Lag2[!train])
+train.Direction <- Weekly$Direction[train]
+
+set.seed(1)
+knn.pred <- knn(train.X, test.X, train.Direction, k = 1)
+
+table(Predicted = knn.pred, Actual = Weekly$Direction[!train])
+mean(knn.pred == Weekly$Direction[!train])
+```
+### H 
+```{r}
+library(e1071)
+nb.fit <- naiveBayes(Direction ~ Lag2, data=Weekly, subset=train)
+nb.pred <- predict(nb.fit, Weekly[!train,])
+table(Predicted = nb.pred, Actual = Weekly$Direction[!train])
+mean(nb.pred == Weekly$Direction[!train])
+```
+### I
+| Method            | Accuracy |
+|-------------------|----------|
+| Logistic (Lag2)   | 62.50%   |
+| LDA (Lag2)        | 62.50%   |
+| QDA (Lag2)        | 58.65%   |
+| KNN (K = 1)       | 50.00%   |
+| Naive Bayes       | 58.65%   |
+
+Based on my models above, the best model are the `LDA` and `Logistic` models.
+
+### J
+Let's try some transformations:
+```{r}
+Weekly$Lag2_sq <- Weekly$Lag2^2
+Weekly$Lag1_Lag2 <- Weekly$Lag1 * Weekly$Lag2
+
+mod <- glm(Direction ~ Lag2 + Lag2_sq, family=binomial,
+           data=Weekly, subset=train)
+pred <- ifelse(predict(mod, Weekly[!train,], type="response") > 0.5, "Up", "Down")
+mean(pred == Weekly$Direction[!train])
+```
+
+Let's also try KNN with an optimized K value:
+```{r}
+acc <- c()
+for (k in 1:20) {
+  pred <- knn(train.X, test.X, train.Direction, k = k)
+  acc[k] <- mean(pred == Weekly$Direction[!train])
+}
+which.max(acc) ; max(acc)
+```
+## Exercise 15
+
+### A
+```{r}
+Power <- function() {
+  print(2^3)
+}
+```
+
+### B
+```{r}
+Power2 <- function(x, a) {
+  print(x^a)
+}
+```
+
+### C
+```{r}
+Power2(10, 3) # Prints 1000
+Power2(8, 17) # Prints 2251799813685248
+Power2(13, 13) # Prints 302875106592253
+```
+
+### D
+```{r}
+Power3 <- function(x, a) {
+  result <- x^a
+  return(result)
+}
+
+Power3(2, 5) # Prints 32
+```
+
+### E
+```{r}
+x <- 1:10
+y <- Power3(x, 2)
+
+plot(x, y,
+     xlab = "x",
+     ylab = "x^2",
+     main = "Plot of f(x) = x^2 for x = 1 to 10")
+```
+
+### F
+```{r}
+PlotPower <- function(x, a) {
+  y <- x^a
+  plot(x, y,
+       xlab = "x",
+       ylab = paste("x^", a, sep=""),
+       main = paste("Plot of f(x) = x^", a, sep=""))
+}
+
+PlotPower(1:10, 3)
+```
+
+

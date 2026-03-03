@@ -12,79 +12,97 @@ knitr::opts_chunk$set(echo = TRUE)
 Section 4.8: Exercises 4, 5, 8, 12
 
 ## Exercise 4
-### A
-```{r}
 
-```
+### A
+Suppose that we have obs, each with measurements on $p = 1$ feature, $X$. We assume $X$ uniformly dist on $[0,1]$. 
+
+Predict response within 10% of the range of $X$ closest to that test obs. To predict response for test obs with $X = 0.6$, we use obs in range $[0.55,0.65]$. 
+
+On avg, what fraction of the obs will we use to make the prediction?
+
+*We will use 0.1 or 10% of the obs*
 
 ### B
-```{r}
+Suppose we have obs on $p = 2$ features, $X_1$ and $X_2$. We assume $(X_1, X_2)$ are uniformly dist on $[0,1] \times [0,1]$.
 
-```
+Predict response within 10% of the range of $X_1$ and within 10% of the range of $X_2$ closest to that test obs. To predict response for test obs with $X_1 = 0.6$ and $X_2 = 0.35$, using obs in the range $[0.55, 0.65]$ for $X_1$ and range $[0.3,0.4]$ for $X_2$.
+
+On avg, what fraction of the obs will we use when making this prediction?
+
+*We will use 0.01 or 1% of the obs because* $0.1 \times 0.1 = 0.01$.
 
 ### C
-```{r}
+Suppose obs on $p = 100$ features. Obs are uniformly dist on each feature, each feature ranges in value from 0 to 1. Predict response using obs from within the 10% of each feature's range that is closest to the test obs.
 
-```
+What fraction of the available obs will we use to make this prediction?
+
+*On* $p = 100$ *features, we would use* $0.10^{100}$ or $1.0 \times 10^{-100}$ *(a very small) of the obs.*
 
 ### D
-```{r}
-
-```
+With high $p$ values, KNN is not preferred because everything is far away from each other. There are very few training obs "near" any given test obs. 
 
 ### E
-```{r}
+Suppose we want to predict a test obs by creating a p-dimensional hypercube centered around the tes obs that contains 10% of the training obs. 
 
-```
+For $p = 1$, $p = 2$, and $p = 100$ what is the length of each side of the hypercube?
+
+$length = (0.10)^{1/p}$
+
+*So for *$p = 1$: $(0.10)^{1/1}$ = *0.10*
+*For *$p = 2$: $(0.10)^{1/2}$ = *0.316*
+*For *$p = 100$: $(0.10)^{1/001}$ = *0.955*
 
 ## Exercise 5
 ### A
-```{r}
-
-```
+If the Bayes decision boundary is linear, we would expect QDA to perform better on the training set and LDA to perform better on the test set.
 
 ### B
-```{r}
-
-```
+If the Bayes decision boundary is non-linear, we would expect QDA to perform better on the training set and QDA to perform better on the test set.
 
 ### C
-```{r}
-
-```
+In general, as the sample size n increases, we expect the test prediction accuracy of QDA to improve relative to LDA.
 
 ### D
-```{r}
+False, if the Bayes decision boundary for a given problem is linear, we will probably achieve a superior test error rate using LDA rather than QDA because QDA's extra flexiblity unnecessarily estimates many parameters. This is because when the true boundary is linear, this extra flexibility adds variance but does not reduce bias
 
-```
 ## Exercise 8
+Take data set and divide into equally size training and test sets, then try two different procedures.
 
-```{r}
+First, logistic regression getting an error rate of 20% on train and 30% on test. Next, 1-nearest neighbors ($K=1$) and get avg error rate of 18% between the two.
 
-```
+$\frac {0\%~+~Test}{2} = 18\%$
+$Test = 36\%$
+
+*K = 1 NN alwyas has 0% train error. So we would prefer to use the logistic regression, because it has an average lower test error.*
+
 
 ## Exercise 12
-### A
-```{r}
+Classify obs $X \in  \mathbb{R}$ into `apples` and `oranges`. You and your friend fit a logistic regression model using the *softmax* formulation and find different equations for $\hat{Pr}(Y=orange|X=x)$.
 
-```
+### A
+$log(\frac{P(orange)}{P(apple)}) = \hat{\beta}_0 + \hat{\beta}_1x$
 
 ### B
-```{r}
-
-```
+$log(\frac{P(orange)}{P(apple)}) = (\alpha_{orange0}-\alpha_{apple0})+(\alpha_{orange1}-\alpha_{apple1})x$
 
 ### C
-```{r}
+Given my coefficients $\hat{\beta}_0 = 2$, $\hat{\beta}_1 = -1$.
 
-```
+$\hat{\beta}_0 + \hat{\beta}_1x =  (\alpha_{orange0}-\alpha_{apple0})+(\alpha_{orange1}-\alpha_{apple1})x$
+
+I'll set $apple = 0$.
+Then we solve and find:
+Orange: $(2,-1)$
+Apple: $(0,0)$
 
 ### D
-```{r}
+Given friends coefficients $\alpha_{orange0} = 1.2$, $\alpha_{orange1} = -2$, $\alpha_{apple0} = 3$, and $\alpha_{apple1} = 0.6$
 
-```
+$\hat{\beta}_0 = \alpha_{orange0} - \alpha_{apple0} = 3 = -1.8$
+$\hat{\beta}_1 = \alpha_{orange1} - \alpha_{apple1} = 3 = -2.6$
+
+$\hat{\beta}_0 -1.8$
+$\hat{\beta}_1 = -2.6$
 
 ### E
-```{r}
-
-```
+The models should agree completely. They two models produce the same log-odds, which means the probability of orange is identical under both models. Since there are only two classes, that means the models have the same classification rules.
