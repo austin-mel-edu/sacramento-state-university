@@ -16,6 +16,7 @@ Section 4.8: Exercises 5, 9
 ```{r}
 library(ISLR2)
 data(Default)
+<<<<<<< HEAD:STAT140B - Statistical Learning/Labs/lab5.Rmd
 
 
 set.seed(1)
@@ -24,11 +25,17 @@ set.seed(1)
 log_mod <- glm(default ~ income + balance, data = Default, family = binomial)
 
 summary(log_mod)
+=======
+set.seed(0)
+
+log.mod <- lm(default ~ income + balance, data = Default)
+>>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e:STAT140B - Statistical Learning/Labs/lab-ch5.Rmd
 ```
 
 ### B
 Validation Set Approach
 ```{r}
+<<<<<<< HEAD:STAT140B - Statistical Learning/Labs/lab5.Rmd
 # 50% training split
 train.idx <- sample(1:nrow(Default), nrow(Default)/2)
 
@@ -44,6 +51,9 @@ pred <- ifelse(prob > 0.5, "Yes", "No")
 # Calculate error rate using validation set
 val.error1 <- mean(pred != valid$default)
 val.error1
+=======
+train <- sample(10000, 7000)
+>>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e:STAT140B - Statistical Learning/Labs/lab-ch5.Rmd
 ```
 
 ### C
@@ -95,9 +105,15 @@ Adding the categorical variable `student` does not improve predictive performanc
 Estimate the population mean of `medv`
 ```{r}
 data(Boston)
+<<<<<<< HEAD:STAT140B - Statistical Learning/Labs/lab5.Rmd
 
 mu_hat <- mean(Boston$medv)
 mu_hat
+=======
+train2 <- sample(506, 355)
+
+lm2 <- lm(mpg ~ horsepower, data = Boston, subset = train)
+>>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e:STAT140B - Statistical Learning/Labs/lab-ch5.Rmd
 ```
 This is the sample mean, our estimate of the true population average of median home value.
 

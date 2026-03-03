@@ -1,0 +1,49 @@
+---
+title: "Missing Data Lab"
+author: "Lauren Perry"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Missing Data
+
+We will use the Student Performance (Math) dataset from the UC Irvine Machine Learning Repository. Information may be found [here](https://archive.ics.uci.edu/dataset/320/student+performance).
+
+In the following chunk of code, I read in this data and then randomly remove 5\% of the observations to create missing data. 
+
+```{r}
+performance_math <- read.csv("https://lgpperry.github.io/teaching/stat140a/student-mat.csv", header=TRUE, sep=";", encoding="UTF-8")
+# Convert character variables to factors.
+performance_math[sapply(performance_math, is.character)] <-
+  lapply(performance_math[sapply(performance_math, is.character)],as.factor)
+
+math_miss <- as.data.frame(lapply(performance_math, \(x) replace(x, sample(length(x), .05*length(x)), NA)))
+
+mod1 <- lm(G3 ~ sex + age + Medu + Fedu + studytime, data=performance_math)
+```
+
+## Your Tasks
+
+1. Repeat the regression model `mod1` on the `math_miss` data. Comment on any changes you observe.
+
+2. Use the mean imputation approach to fill in the missing data. Remember *not* to fill in values for `G3`, as it is our outcome variable. Note that you may need to do a little extra work to fill in the missing values for the factor variables (use their modes). Save the filled in data as `mean_impute`
+
+```{r}
+math_impute <- math_miss
+```
+
+3. Repeat the regression model `mod1` on the `math_impute` data. What do you observe? How does this model compare to the models run on `performance_math` (`mod1`) and on `math_miss`?
+
+4. Use the regression methods approach to fill in the missing data. Save this new filled in data as `math_reg`.
+
+```{r}
+math_reg <- math_miss
+```
+
+5. Repeat the regression model `mod1` on the `math_reg` data. What do you observe? How does this model compare to the models run on `performance_math` (`mod1`) and on `math_miss`?
+
+6. Use multiple imputation (with the `Amelia` package) to generate regression coefficients and standard errors from `math_miss`. How do these values compare to those found on `performance_math` and using mean/regression impuation?

@@ -1,0 +1,30 @@
+---
+title: "Introduction to R"
+author: "YOUR NAME HERE"
+date: "DUE DATE"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Section 2.4: Exercises 8 - 10
+
+## Exercise 8
+
+```{r}
+
+```
+
+## Exercise 9
+
+```{r}
+
+```
+
+## Exercise 10
+
+```{r}
+
+```

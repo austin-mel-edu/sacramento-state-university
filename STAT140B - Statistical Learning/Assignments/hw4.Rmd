@@ -1,0 +1,20 @@
+---
+title: "hw4"
+author: "Austin Melendez"
+date: "03/1/26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Section 5.4: Exercises 3, 4
+
+## Exercise 3
+
+### A
+
+## Exercise 4
+
+### A

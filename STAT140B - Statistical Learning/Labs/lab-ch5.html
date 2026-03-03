@@ -11,9 +11,9 @@
 
 <meta name="author" content="Austin Melendez" />
 
-<meta name="date" content="2026-02-18" />
+<meta name="date" content="2026-02-25" />
 
-<title>hw3</title>
+<title>lab5</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -350,230 +350,210 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">hw3</h1>
+<h1 class="title toc-ignore">lab5</h1>
 <h4 class="author">Austin Melendez</h4>
-<h4 class="date">02/18/26</h4>
+<h4 class="date">2026-02-25</h4>
 
 </div>
 
 
-<p>Section 4.8: Exercises 4, 5, 8, 12</p>
-<div id="exercise-4" class="section level2">
-<h2>Exercise 4</h2>
-<<<<<<< HEAD
+<p>Section 4.8: Exercises 5, 9</p>
+<div id="exercise-5" class="section level2">
+<h2>Exercise 5</h2>
 <div id="a" class="section level3">
 <h3>A</h3>
-<p>Suppose that we have obs, each with measurements on <span class="math inline">\(p = 1\)</span> feature, <span class="math inline">\(X\)</span>. We assume <span class="math inline">\(X\)</span> uniformly dist on <span class="math inline">\([0,1]\)</span>.</p>
-=======
-<p>The curse of dimensionality: ### A Suppose that we have obs, each
-with measurements on <span class="math inline">\(p = 1\)</span> feature,
-<span class="math inline">\(X\)</span>. We assume <span class="math inline">\(X\)</span> uniformly dist on <span class="math inline">\([0,1]\)</span>.</p>
->>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
-<p>Predict response within 10% of the range of <span class="math inline">\(X\)</span> closest to that test obs. To predict
-response for test obs with <span class="math inline">\(X = 0.6\)</span>,
-we use obs in range <span class="math inline">\([0.55,0.65]\)</span>.</p>
-<p>On avg, what fraction of the obs will we use to make the
-prediction?</p>
-<<<<<<< HEAD
-<p><em>We will use 0.1 or 10% of the obs</em></p>
+<pre class="r"><code>library(ISLR2)</code></pre>
+<pre><code>## Warning: package &#39;ISLR2&#39; was built under R version 4.5.2</code></pre>
+<pre class="r"><code>data(Default)
+
+
+set.seed(1)
+
+# Fit logistic regression using all data
+log_mod &lt;- glm(default ~ income + balance, data = Default, family = binomial)
+
+summary(log_mod)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = default ~ income + balance, family = binomial, 
+##     data = Default)
+## 
+## Coefficients:
+##               Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept) -1.154e+01  4.348e-01 -26.545  &lt; 2e-16 ***
+## income       2.081e-05  4.985e-06   4.174 2.99e-05 ***
+## balance      5.647e-03  2.274e-04  24.836  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 2920.6  on 9999  degrees of freedom
+## Residual deviance: 1579.0  on 9997  degrees of freedom
+## AIC: 1585
+## 
+## Number of Fisher Scoring iterations: 8</code></pre>
 </div>
 <div id="b" class="section level3">
 <h3>B</h3>
-<p>Suppose we have obs on <span class="math inline">\(p = 2\)</span>
-features, <span class="math inline">\(X_1\)</span> and <span class="math inline">\(X_2\)</span>. We assume <span class="math inline">\((X_1, X_2)\)</span> are uniformly dist on <span class="math inline">\([0,1] \times [0,1]\)</span>.</p>
-=======
-<p><em>asnwer</em></p>
-<div id="b" class="section level3">
-<h3>B</h3>
-<p>Suppose we have obs on <span class="math inline">\(p = 2\)</span>
-features, <span class="math inline">\(X_1\)</span> and <span class="math inline">\(X_2\)</span>. We assume <span class="math inline">\((X_1, X_2)\)</span> are uniformly dist on <span class="math inline">\([0,1] x [0,1]\)</span>.</p>
->>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
-<p>Predict response within 10% of the range of <span class="math inline">\(X_1\)</span> and within 10% of the range of <span class="math inline">\(X_2\)</span> closest to that test obs. To predict
-response for test obs with <span class="math inline">\(X_1 =
-0.6\)</span> and <span class="math inline">\(X_2 = 0.35\)</span>, using
-obs in the range <span class="math inline">\([0.55, 0.65]\)</span> for
-<span class="math inline">\(X_1\)</span> and range <span class="math inline">\([0.3,0.4]\)</span> for <span class="math inline">\(X_2\)</span>.</p>
-<p>On avg, what fraction of the obs will we use when making this
-prediction?</p>
-<<<<<<< HEAD
-<p><em>We will use 0.01 or 1% of the obs because</em> <span class="math inline">\(0.1 \times 0.1 = 0.01\)</span>.</p>
-=======
-<p><em>answer</em></p>
->>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
+<p>Validation Set Approach</p>
+<pre class="r"><code># 50% training split
+train.idx &lt;- sample(1:nrow(Default), nrow(Default)/2)
+
+train &lt;- Default[train.idx, ]
+valid &lt;- Default[-train.idx, ]
+
+# Fit logistic regression on training set
+log_train &lt;- glm(default ~ income + balance, data=train, family=binomial)
+
+prob &lt;- predict(log_train, newdata=valid, type=&quot;response&quot;)
+pred &lt;- ifelse(prob &gt; 0.5, &quot;Yes&quot;, &quot;No&quot;)
+
+# Calculate error rate using validation set
+val.error1 &lt;- mean(pred != valid$default)
+val.error1</code></pre>
+<pre><code>## [1] 0.0254</code></pre>
 </div>
 <div id="c" class="section level3">
 <h3>C</h3>
-<p>Suppose obs on <span class="math inline">\(p = 100\)</span> features.
-Obs are uniformly dist on each feature, each feature ranges in value
-from 0 to 1. Predict response using obs from within the 10% of each
-feature’s range that is closest to the test obs.</p>
-<<<<<<< HEAD
-<p>What fraction of the available obs will we use to make this
-prediction?</p>
-<p><em>On</em> <span class="math inline">\(p = 100\)</span>
-<em>features, we would use</em> <span class="math inline">\(0.10^{100}\)</span> or <span class="math inline">\(1.0 \times 10^{-100}\)</span> <em>(a very small)
-of the obs.</em></p>
+<p>Repeat three times with different random splits</p>
+<pre class="r"><code>errors &lt;- rep(0, 3)
+
+for (i in 1:3) {
+  train.idx &lt;- sample(1:nrow(Default), nrow(Default)/2)
+  
+  train &lt;- Default[train.idx, ]
+  valid &lt;- Default[-train.idx, ]
+  
+  log_train2 &lt;- glm(default ~ income + balance, data=train, family=binomial)
+  
+  prob &lt;- predict(log_train2, newdata=valid, type=&quot;response&quot;)
+  pred &lt;- ifelse(prob &gt; 0.5, &quot;Yes&quot;, &quot;No&quot;)
+  
+  errors[i] &lt;- mean(pred != valid$default)
+}
+
+errors</code></pre>
+<pre><code>## [1] 0.0274 0.0244 0.0244</code></pre>
+<pre class="r"><code>mean(errors)</code></pre>
+<pre><code>## [1] 0.0254</code></pre>
+<p>The validation error for each subset varies slightly between the
+different splits. Each split got a validation error rate of <span class="math inline">\(0.0274\)</span>, <span class="math inline">\(0.0244\)</span>, and <span class="math inline">\(0.0244\)</span> with a average error rate of <span class="math inline">\(0.0254\)</span> or <span class="math inline">\(2.54\%\)</span>.</p>
 </div>
 <div id="d" class="section level3">
 <h3>D</h3>
-<p>With high <span class="math inline">\(p\)</span> values, KNN is not
-preferred because everything is far away from each other. There are very
-few training obs “near” any given test obs.</p>
-=======
-<p>What fraction of the available obs will we use ot make this
-prediction?</p>
-<p><em>answer</em></p>
-</div>
-<div id="d" class="section level3">
-<h3>D</h3>
->>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
-</div>
-<div id="e" class="section level3">
-<h3>E</h3>
-<p>Suppose we want to predict a test obs by creating a p-dimensional
-hypercube centered around the tes obs that contains 10% of the training
-obs.</p>
-<p>For <span class="math inline">\(p = 1\)</span>, <span class="math inline">\(p = 2\)</span>, and <span class="math inline">\(p
-= 100\)</span> what is the length of each side of the hypercube?</p>
-<<<<<<< HEAD
-<p><span class="math inline">\(length = (0.10)^{1/p}\)</span></p>
-<p><em>So for </em><span class="math inline">\(p = 1\)</span>: <span class="math inline">\((0.10)^{1/1}\)</span> = <em>0.10</em> <em>For
-</em><span class="math inline">\(p = 2\)</span>: <span class="math inline">\((0.10)^{1/2}\)</span> = <em>0.316</em> <em>For
-</em><span class="math inline">\(p = 100\)</span>: <span class="math inline">\((0.10)^{1/001}\)</span> = <em>0.955</em></p>
-=======
-<p><em>answr</em></p>
->>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
+<p>Add student dummy variable</p>
+<pre class="r"><code>train.idx &lt;- sample(1:nrow(Default), nrow(Default)/2)
+
+train &lt;- Default[train.idx, ]
+valid &lt;- Default[-train.idx, ]
+
+log_student &lt;- glm(default ~ income + balance + student,
+                   data=train, family=binomial)
+
+prob2 &lt;- predict(log_student, newdata=valid, type=&quot;response&quot;)
+pred2 &lt;- ifelse(prob2 &gt; 0.5, &quot;Yes&quot;, &quot;No&quot;)
+
+val.error.student &lt;- mean(pred2 != valid$default)
+val.error.student</code></pre>
+<pre><code>## [1] 0.0278</code></pre>
+<p>Adding the categorical variable <code>student</code> does not improve
+predictive performance of the model even though the coefficient might be
+statistically significant. Our validation error rate using this new
+model is worse, being at <span class="math inline">\(0.0278\)</span>.</p>
 </div>
 </div>
-<div id="exercise-5" class="section level2">
-<h2>Exercise 5</h2>
-<<<<<<< HEAD
+<div id="exercise-9" class="section level2">
+<h2>Exercise 9</h2>
 <div id="a-1" class="section level3">
 <h3>A</h3>
-<p>If the Bayes decision boundary is linear, we would expect QDA to
-perform better on the training set and LDA to perform better on the test
-=======
-<div id="a" class="section level3">
-<h3>A</h3>
-<p>If the Bayes decision boundary is linear, we would expect _ to
-perform better on the training set and _ to perform better on the test
->>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
-set.</p>
+<p>Estimate the population mean of <code>medv</code></p>
+<pre class="r"><code>data(Boston)
+
+mu_hat &lt;- mean(Boston$medv)
+mu_hat</code></pre>
+<pre><code>## [1] 22.53281</code></pre>
+<p>This is the sample mean, our estimate of the true population average
+of median home value.</p>
 </div>
 <div id="b-1" class="section level3">
 <h3>B</h3>
-<<<<<<< HEAD
-<p>If the Bayes decision boundary is non-linear, we would expect QDA to
-perform better on the training set and QDA to perform better on the test
-=======
-<p>If the Bayes decision boundary is non-linear, we would expect _ to
-perform better on the training set and _ to perform better on the test
->>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
-set.</p>
+<p>Estimate the standard error of <code>mu hat</code></p>
+<pre class="r"><code>se_mean &lt;- sd(Boston$medv) / sqrt(nrow(Boston))
+se_mean</code></pre>
+<pre><code>## [1] 0.4088611</code></pre>
+<p>This is how much our estimate of the mean would vary if we repeatedly
+sampled new data sets of the same size.</p>
 </div>
 <div id="c-1" class="section level3">
 <h3>C</h3>
-<p>In general, as the sample size n increases, we expect the test
-<<<<<<< HEAD
-prediction accuracy of QDA to improve relative to LDA.</p>
+<p>Bootstrap estimate of the SE of the mean</p>
+<pre class="r"><code>B &lt;- 1000
+boot.means &lt;- rep(0, B)
+
+for (b in 1:B) {
+  boot.sample &lt;- sample(Boston$medv, replace = TRUE)
+  boot.means[b] &lt;- mean(boot.sample)
+}
+
+boot_se.mean &lt;- sd(boot.means)
+boot_se.mean</code></pre>
+<pre><code>## [1] 0.3981492</code></pre>
+<p>Our bootstrap SE is very close to our estimate from B</p>
 </div>
 <div id="d-1" class="section level3">
 <h3>D</h3>
-<p>False, if the Bayes decision boundary for a given problem is linear,
-we will probably achieve a superior test error rate using LDA rather
-than QDA because QDA’s extra flexiblity unnecessarily estimates many
-parameters. This is because when the true boundary is linear, this extra
-flexibility adds variance but does not reduce bias</p>
-=======
-prediction accuracy of QDA to _ compared to LDA.</p>
+<p>95% CI using bootstrap SE vs t test</p>
+<pre class="r"><code>ci_boot &lt;- c(mu_hat - 2*boot_se.mean, mu_hat + 2*boot_se.mean)
+ci_boot</code></pre>
+<pre><code>## [1] 21.73651 23.32910</code></pre>
 </div>
-<div id="d-1" class="section level3">
-<h3>D</h3>
-<p>True, if the Bayes decision boundary for a given problem is linear,
-we will probably achieve a superior test error rate using _ rather than
-_ because _ is flexible enough to model a linear decision boundary.</p>
-<p>This is because</p>
->>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
-</div>
-</div>
-<div id="exercise-8" class="section level2">
-<h2>Exercise 8</h2>
-<p>Take data set and divide into equally size training and test sets,
-then try two different procedures.</p>
-<p>First, logistic regression getting an error rate of 20% on train and
-<<<<<<< HEAD
-30% on test. Next, 1-nearest neighbors (<span class="math inline">\(K=1\)</span>) and get avg error rate of 18%
-between the two.</p>
-<p><span class="math inline">\(\frac {0\%~+~Test}{2} = 18\%\)</span>
-<span class="math inline">\(Test = 36\%\)</span></p>
-<p><em>K = 1 NN alwyas has 0% train error. So we would prefer to use the
-logistic regression, because it has an average lower test
-error.</em></p>
-=======
-30% on test. Next, 1-nearest neighbors (<span class="math inline">\(K=1\)</span>) and get avg error rate of 18%.</p>
-<p><em>We would prefer to use the KNN with <span class="math inline">\(K=1\)</span> for the classification of new
-observations because the test accuracy is much lower.</em></p>
->>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
-</div>
-<div id="exercise-12" class="section level2">
-<h2>Exercise 12</h2>
-<p>Classify obs <span class="math inline">\(X \in  \mathbb{R}\)</span>
-into <code>apples</code> and <code>oranges</code>. You and your friend
-<<<<<<< HEAD
-fit a logistic regression model using the <em>softmax</em> formulation
-and find different equations for <span class="math inline">\(\hat{Pr}(Y=orange|X=x)\)</span>.</p>
-<div id="a-2" class="section level3">
-<h3>A</h3>
-<p><span class="math inline">\(log(\frac{P(orange)}{P(apple)}) =
-\hat{\beta}_0 + \hat{\beta}_1x\)</span></p>
-</div>
-<div id="b-2" class="section level3">
-<h3>B</h3>
-<p><span class="math inline">\(log(\frac{P(orange)}{P(apple)}) =
-(\alpha_{orange0}-\alpha_{apple0})+(\alpha_{orange1}-\alpha_{apple1})x\)</span></p>
-</div>
-<div id="c-2" class="section level3">
-<h3>C</h3>
-<p>Given my coefficients <span class="math inline">\(\hat{\beta}_0 =
-2\)</span>, <span class="math inline">\(\hat{\beta}_1 = -1\)</span>.</p>
-<p><span class="math inline">\(\hat{\beta}_0 + \hat{\beta}_1x
-=  (\alpha_{orange0}-\alpha_{apple0})+(\alpha_{orange1}-\alpha_{apple1})x\)</span></p>
-<p>I’ll set <span class="math inline">\(apple = 0\)</span>. Then we
-solve and find: Orange: <span class="math inline">\((2,-1)\)</span>
-Apple: <span class="math inline">\((0,0)\)</span></p>
-</div>
-<div id="d-2" class="section level3">
-<h3>D</h3>
-<p>Given friends coefficients <span class="math inline">\(\alpha_{orange0} = 1.2\)</span>, <span class="math inline">\(\alpha_{orange1} = -2\)</span>, <span class="math inline">\(\alpha_{apple0} = 3\)</span>, and <span class="math inline">\(\alpha_{apple1} = 0.6\)</span></p>
-<p><span class="math inline">\(\hat{\beta}_0 = \alpha_{orange0} -
-\alpha_{apple0} = 3 = -1.8\)</span> <span class="math inline">\(\hat{\beta}_1 = \alpha_{orange1} - \alpha_{apple1}
-= 3 = -2.6\)</span></p>
-<p><span class="math inline">\(\hat{\beta}_0 -1.8\)</span> <span class="math inline">\(\hat{\beta}_1 = -2.6\)</span></p>
-</div>
-<div id="e-1" class="section level3">
+<div id="e" class="section level3">
 <h3>E</h3>
-<p>The models should agree completely. They two models produce the same
-log-odds, which means the probability of orange is identical under both
-models. Since there are only two classes, that means the models have the
-same classification rules.</p>
-=======
-fit a logistic regression model using the formulation and find different
-equations for <span class="math inline">\(\hat{Pr}(Y=orange|X=x)\)</span>.</p>
-<div id="a-1" class="section level3">
-<h3>A</h3>
+<p>Estimate the population median</p>
+<pre class="r"><code>median_hat &lt;- median(Boston$medv)
+median_hat</code></pre>
+<pre><code>## [1] 21.2</code></pre>
 </div>
-<div id="b-2" class="section level3">
-<h3>B</h3>
+<div id="f" class="section level3">
+<h3>F</h3>
+<p>Bootstrap SE of the median</p>
+<pre class="r"><code>boot.medians &lt;- rep(0, B)
+
+for (b in 1:B) {
+  boot.sample &lt;- sample(Boston$medv, replace = TRUE)
+  boot.medians[b] &lt;- median(boot.sample)
+}
+
+boot.se.median &lt;- sd(boot.medians)
+boot.se.median</code></pre>
+<pre><code>## [1] 0.3836469</code></pre>
+<p>SE of the median is larger than SE of the mean because the median is
+more variable.</p>
 </div>
-<div id="c-2" class="section level3">
-<h3>C</h3>
+<div id="g" class="section level3">
+<h3>G</h3>
+<p>Estimate the 10th percentile of <code>medv</code></p>
+<pre class="r"><code>p10_hat &lt;- quantile(Boston$medv, 0.10)
+p10_hat</code></pre>
+<pre><code>##   10% 
+## 12.75</code></pre>
 </div>
-<div id="d-2" class="section level3">
-<h3>D</h3>
-</div>
-<div id="e-1" class="section level3">
-<h3>E</h3>
->>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
+<div id="h" class="section level3">
+<h3>H</h3>
+<p>Bootstrap SE of the 10th percentile</p>
+<pre class="r"><code>boot.p10 &lt;- rep(0, B)
+
+for (b in 1:B) {
+  boot.sample &lt;- sample(Boston$medv, replace = TRUE)
+  boot.p10[b] &lt;- quantile(boot.sample, 0.10)
+}
+
+boot.se.p10 &lt;- sd(boot.p10)
+boot.se.p10</code></pre>
+<pre><code>## [1] 0.492516</code></pre>
+<p>Percentiles near the tails often have higher SE than central
+measures. (like the mean)</p>
 </div>
 </div>
 

@@ -12,10 +12,17 @@ knitr::opts_chunk$set(echo = TRUE)
 Section 4.8: Exercises 4, 5, 8, 12
 
 ## Exercise 4
+<<<<<<< HEAD
 
 ### A
 Suppose that we have obs, each with measurements on $p = 1$ feature, $X$. We assume $X$ uniformly dist on $[0,1]$. 
 
+=======
+The curse of dimensionality:
+### A
+Suppose that we have obs, each with measurements on $p = 1$ feature, $X$. We assume $X$ uniformly dist on $[0,1]$. 
+
+>>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
 Predict response within 10% of the range of $X$ closest to that test obs. To predict response for test obs with $X = 0.6$, we use obs in range $[0.55,0.65]$. 
 
 On avg, what fraction of the obs will we use to make the prediction?
@@ -46,6 +53,7 @@ Suppose we want to predict a test obs by creating a p-dimensional hypercube cent
 
 For $p = 1$, $p = 2$, and $p = 100$ what is the length of each side of the hypercube?
 
+<<<<<<< HEAD
 $length = (0.10)^{1/p}$
 
 *So for *$p = 1$: $(0.10)^{1/1}$ = *0.10*
@@ -64,10 +72,29 @@ In general, as the sample size n increases, we expect the test prediction accura
 
 ### D
 False, if the Bayes decision boundary for a given problem is linear, we will probably achieve a superior test error rate using LDA rather than QDA because QDA's extra flexiblity unnecessarily estimates many parameters. This is because when the true boundary is linear, this extra flexibility adds variance but does not reduce bias
+=======
+*answr*
+
+## Exercise 5
+### A
+If the Bayes decision boundary is linear, we would expect _ to perform better on the training set and _ to perform better on the test set.
+
+### B
+If the Bayes decision boundary is non-linear, we would expect _ to perform better on the training set and _ to perform better on the test set.
+
+### C
+In general, as the sample size n increases, we expect the test prediction accuracy of QDA to _ compared to LDA.
+
+### D
+True, if the Bayes decision boundary for a given problem is linear, we will probably achieve a superior test error rate using _ rather than _ because _ is flexible enough to model a linear decision boundary. 
+
+This is because
+>>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
 
 ## Exercise 8
 Take data set and divide into equally size training and test sets, then try two different procedures.
 
+<<<<<<< HEAD
 First, logistic regression getting an error rate of 20% on train and 30% on test. Next, 1-nearest neighbors ($K=1$) and get avg error rate of 18% between the two.
 
 $\frac {0\%~+~Test}{2} = 18\%$
@@ -106,3 +133,25 @@ $\hat{\beta}_1 = -2.6$
 
 ### E
 The models should agree completely. They two models produce the same log-odds, which means the probability of orange is identical under both models. Since there are only two classes, that means the models have the same classification rules.
+=======
+First, logistic regression getting an error rate of 20% on train and 30% on test. Next, 1-nearest neighbors ($K=1$) and get avg error rate of 18%.
+
+*We would prefer to use the KNN with $K=1$ for the classification of new observations because the test accuracy is much lower.*
+
+## Exercise 12
+Classify obs $X \in  \mathbb{R}$ into `apples` and `oranges`. You and your friend fit a logistic regression model using the *softmax* formulation and find different equations for $\hat{Pr}(Y=orange|X=x)$.
+
+### A
+
+
+### B
+
+
+### C
+
+
+### D
+
+
+### E
+>>>>>>> 3abdeeb80d2def0948581954ab4c64c0c8ed6f6e
