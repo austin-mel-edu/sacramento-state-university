@@ -1,0 +1,244 @@
+---
+title: "project3"
+author: "Austin Melendez"
+date: "2025-12-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# STAT 140A PROJECT THREE
+## Austin Melendez
+### 12/12/2025
+
+```{r}
+#install.packages("ggplot2")
+#install.packages("tidyverse")
+#install.packages("pROC")
+#install.packages("MASS")
+#install.packages("car")
+#install.packages("psych")
+
+library(ggplot2)
+library(tidyverse)
+library(pROC)
+library(MASS)
+library(car)
+```
+
+
+## Introduction
+
+From the UCI Machine Learning Repository I chose the Statlog Australian Credit Approval dataset. This dataset has 690 instances, 14 attributes (6 numeric, 8 categorical), and a binary class target. All attribute names and values have been changed to meaningless symbols to protect confidentiality of the data.
+
+This file concerns credit card applications and contains a good mix of attributes. The overall goal of the model will be to determine if a customer is approved or rejected for a new credit card.
+
+## Dataset
+
+```{r}
+data <- read.table("C:/Users/Austin/Desktop/australian.dat", header = TRUE, sep = " ")
+
+head(data)
+```
+
+Since our data has a few columns of categorical variables, we need to make sure they are setup correctly in R.
+
+```{r}
+data$A15 <- factor(data$A15)
+
+cat_vars <- c("A1","A4","A5","A6","A8","A9","A11","A12")
+for (v in cat_vars) {
+  data[[v]] <- as.factor(data[[v]])
+}
+
+head(data)
+```
+
+Next, lets make sure that there are no missing values in our data.
+
+```{r}
+sapply(data, function(x) sum(is.na(x)))
+
+missing_summary <- sapply(data, function(x) sum(is.na(x)))
+
+print(missing_summary[missing_summary > 0])
+```
+
+We have no missing data in our dataset, which means we can move onto the next step. Let's take a brief look into the data to make sure the variables aren't clustered and there is nothing weird going on.
+
+```{r}
+summary(data)
+```
+Looking at the summary, we see that there is a nice spread of data. There is no heavy skew on any of the binary factors and the factors with multiple levels also show a nice distribution. The only thing that I noted is that `A14` has a very large range of data, from $1.0$ to $100,001.0$ with a median of $6.0$ that means the data is mostly on the low end, with very high values on the extreme side.
+
+Let's take a peak at the correlation matrix between our outcome `Y` and only the numerical values in our dataset.
+
+```{r}
+num_vars <- sapply(data[, 1:14], is.numeric)
+
+round(cor(as.numeric(data$A15),
+          data[, 1:14][, num_vars],
+          use = "complete.obs"), 4)
+```
+
+Here we can see a slight overall positive correlation between these numerical values and the outcome. The highest correlation is between `A10` and `A15` with a $0.4064$ positive correlation between the value of `A10` and a positive result. The numeric predictors showed small to moderate correlation with the outcome, with A10 having the strongest positive correlation.
+
+```{r}
+plot(data[1:5])
+```
+
+Although I could not run the plotting function on all of the variables, we can see from this subset of variables the numerical data is random and doesn't show clusters. Our categorical data is grouped based on value and has no variability within groups.
+
+## Logistic Regression
+
+```{r}
+mod_full <- glm(A15 ~ ., data = data, family = binomial)
+summary(mod_full)
+```
+
+Looking at our full model using all 14 predictors, we can see that only 6 predictors are statistically significant in this model. Those predictors are `A4`, `A5`, `A8`, `A10`, `A13`, and `A14`. 
+
+Let's check our model assumptions to ensure everything still checks out.
+
+```{r}
+plot(mod_full)
+```
+
+Our residuals vs fitted plot seems to show some non-linearity as there are multiple points that diverge in the middle and create tails. Similarly, our Q-Q residuals plot shows that the extreme end of the graph tails off towards higher residuals. However, since we are interpreting financial data, this makes sense as income in often on a logistic scale. Let's first remove our one problem point index $499$.
+
+```{r}
+data <- data[-499, ]
+
+mod_full <- glm(A15 ~ ., data = data, family = binomial)
+plot(mod_full)
+```
+
+Now let's see how influential some of our points are compared to our data.
+
+```{r}
+infl <- influence.measures(mod_full)
+
+cookd <- cooks.distance(mod_full)
+plot(cookd, type="h", main="Cook's distance for full model")
+```
+
+We see one high cooks distance at around index 425, however looking at the scale of the graph we notice our y-axis is small. The highest cooks distance value is less than $0.10$.
+
+Let's check our VIF values to determine if any of our predictors have multicollinearity.
+
+```{r}
+vif_vals <- car::vif(mod_full)
+print(vif_vals)
+```
+
+Based on our VIF values, none of our predictors have multicollinearity.
+
+Our significant predictors are `A4`, `A5`, `A8`, `A10`, `A13`, and `A14`. Let's make a model with only these 6 predictors and see if our model is better.
+
+```{r}
+mod_1 <- glm(A15 ~ A4 + A5 + A8 + A10 + A13 + A14,
+                    data =  data,
+                    family = binomial)
+
+summary(mod_1)
+```
+
+Our AIC has gone done by about 10 from our full model, meaning our model with only the 6 significant predictors is better. Let's try one last model using our log transformed `A14` predictor variable.
+
+Looking at our fitted vs residuals plot, we notice we are violating some of our model assumption. Since the `A14` predictor has a large skew, I'm going to assume that variable has something to do with income or money. Let's transform this predictor to use a log scale or square root and see if that fixes our model assumptions at all.
+
+```{r}
+mod_3 <- glm(A15 ~ A4 + A5 + A8 + A10 + A13 + log(data$A14),
+                    data =  data,
+                    family = binomial)
+
+summary(mod_3)
+```
+This model made two of our predictors more statistically significantly, however our AIC increased by about 10 again, meaning this model has the same predictive power as our full model. Let's try one last model using square root instead.
+
+```{r}
+mod_4 <- glm(A15 ~ A4 + A5 + A8 + A10 + A13 + sqrt(data$A14),
+                    data = data,
+                    family = binomial)
+
+summary(mod_4)
+```
+
+```{r}
+mod_5 <- glm(A15 ~ A4 + A5 + A8 + A10 + sqrt(data$A13) + log(data$A14),
+                    data = data,
+                    family = binomial)
+
+summary(mod_5)
+```
+
+
+Model 4 has the lowest AIC score and maintains all 6 predictors statistically significant above the $0.05$ level.
+
+```{r}
+plot(mod_4)
+```
+
+As you can see, our transformation has not fixed our model assumption problem. We still have nonlinearity.
+
+```{r}
+anova(mod_4, test="Chisq")
+```
+
+## Prediction
+
+```{r}
+prob <- predict(mod_4, type = "response")
+roc_obj <- roc(data$A15, prob)
+
+plot(roc_obj, col = "blue", main = "ROC Curve")
+
+opt <- coords(roc_obj, "best", best.method="youden", ret="threshold")
+opt
+```
+
+From our ROC curve we can see that our model is fairly accurate, it rises to to about the $0.90$ to $0.95$ level which indicates our model is able to reliably distinguish between `A15` approval and rejection. Our model should be able to correctly identify true positives most of the time and rarely produces false positives.
+
+Let's look at our confusion matrix to confirm these assumptions.
+
+From above our optimal cutoff is $0.5326955$.
+
+```{r}
+
+
+pred_class <- ifelse(prob > 0.5326955, 1, 0)
+
+table_pred <- table(Predicted = pred_class, Actual = data$A15)
+
+table_pred
+```
+
+From our confusion matrix, we can see that we were correct in saying that our model correctly identifies true positives most of the time and rarely produces false positives. 
+
+```{r}
+misclass_rate <- mean(pred_class != data$A15)
+misclass_rate
+```
+Our best model only missclassified data $11.32%$ of the time. This is very accurate! Let's calculate our sensitivity and specificity.
+
+```{r}
+TP <- table_pred[2, 2]
+TN <- table_pred[1, 1]
+FP <- table_pred[2, 1]
+FN <- table_pred[1, 2]
+
+sensitivity <- TP / (TP + FN)
+specificity <- TN / (TN + FP)
+
+sensitivity
+specificity
+```
+The goal of this project was to build a logistic regression model to predict the outcome variable A15 (approval/denial of credit card application) based on 14 predictors (A1–A14). After fitting an initial full model, diagnostic plots and summary statistics suggested that some predictors (A14), showed significant skew, which means it would likely benefit from transformation. After applying log transformations and square root transformations, we noticed the square root did a better job for the model. Applying this transformation slightly reduced the AIC, indicating a better overall fit.
+
+Looking at our correlation matrix, all but one predictor showed associations with the probability of a positive outcome. Model performance was evaluated using an ROC curve.
+
+The confusion matrix showed that the model correctly classified a strong majority of observations, and the overall misclassification rate was relatively low. Sensitivity and specificity values confirmed that the model performs well at distinguishing between the two classes.
+
+This analysis reinforced several key concepts such as the importance of checking assumptions of logistic regression, the usefulness of transformations for skewed predictors, and the practical value of ROC curves for classification decisions. Overall, the model provides effective predictive capability and gives clear insight into which predictors have the strongest effects on the outcome response. However, our model assumptions are violated as our plots show our data is not linear.

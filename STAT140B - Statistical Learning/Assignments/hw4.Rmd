@@ -12,9 +12,33 @@ knitr::opts_chunk$set(echo = TRUE)
 Section 5.4: Exercises 3, 4
 
 ## Exercise 3
-
 ### A
+Explain how k-fold cross-validation is implemented.
+
+Step 1) Randomly split data into k roughly equal sized folds
+
+Step 2) For each fold $j = 1, ..., k$
+* Treat fold j as validation set
+* Treat remaining $k - 1$ folds as training set
+* Fit model on training set
+* Compute test error on validation set
+Step 3) Obtain k-fold CV estimate by averaging the k validation errors
+
+### B
+What are the advantages and disadvantages of k-fold cross-
+validation?
+
+#### i
+Validation set approach:
+Compared to the validation set approach, k-fold CV uses most of the data for training in each fold which results in a lower variance and bias. Since the validation set approach uses only part of the data it can have a high variance and bias since it depends on a single split.
+
+#### ii
+LOOCV:
+Compared to the LOOCV approach, k-fold CV is much faster and lower variance since it uses ~90% of the data to train. However, LOOCV trains on nearly the full data set, meaning our bias is slightly lower, but can introduce high variances becuase the models are trained on almost identical sets. LOOCV is also very computationally expensive.
+
 
 ## Exercise 4
+Suppose we use a statistical learning method to predict the response Y. We want to estimate the standard deviation (uncertainty) of the prediction.
 
 ### A
+I would use the bootstrap method to repeatedly re-sample from the model to estimate the standard dev. First we fit the model on each training set, obtaining some predicted values. Then, I estimate the standard deviation of the prediction by computing the sample standard deviation across these bootstrap predictions.
