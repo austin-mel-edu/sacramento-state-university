@@ -1,7 +1,7 @@
 ---
-title: "lab-ch6-1"
+title: "lab-ch6-2"
 author: "Austin Melendez"
-date: "2026-03-03"
+date: "2026-03-05"
 output: html_document
 ---
 
@@ -9,201 +9,226 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+Section 6.6: Exercises 9, 11
+
 ```{r}
-#install.packages("leaps")
-#install.packages("glmnet")
-library(leaps)
+library(ISLR2)
 library(glmnet)
+library(pls)
+library(leaps)
 ```
 
+## Exercise 9
+Predict the number of applications received using the other variables in the `College` data set.
 
-Section 6.6: Exercises 8, 10
-
-## Exercise 8
 ### A
-Generate a predictor X of length n = 100, as well as a noise vector $\epsilon$ of length n = 100.
+Split the data into Train/Test sets
+
 ```{r}
+data(College)
+
 set.seed(1)
-n <- 100
-X <- rnorm(n)
-eps <- rnorm(n, sd = 1)
+train <- sample(1:nrow(College), nrow(College)/2)
+
+test <- -train
 ```
 
 ### B
-Generate a response vector Y of length n = 100.
-```{r}
-beta0 <- 1
-beta1 <- 2
-beta2 <- 3
-beta3 <- 4
+Fit a linear model using least squares on the training set, and report the test error.
 
-Y <- beta0 + beta1*X + beta2*X^2 + beta3*X^3 + eps
+```{r}
+lm.fit <- lm(Apps ~ ., data=College, subset=train)
+
+lm.pred <- predict(lm.fit, College[test,])
+
+lm.test.mse <- mean((College$Apps[test] - lm.pred)^2)
+
+lm.test.mse
 ```
 
 ### C
+Fit a ridge regression model on the training set, with $\lambda$ chosen by cross-validation. Report the test error.
 ```{r}
-data <- data.frame(Y = Y, X = X)
-for (i in 2:10) data[paste0("X", i)] <- X^i
+x <- model.matrix(Apps~., College)[,-1]
+y <- College$Apps
 
-best.fit <- regsubsets(Y ~ ., data = data, nvmax = 10)
-best.sum <- summary(best.fit)
-```
+set.seed(1)
 
-Let's plot $Cp$, $BIC$, and adjusted $R^2$.
-```{r}
-plot(best.sum$cp, type="b", main="Cp")
-plot(best.sum$bic, type="b", main="BIC")
-plot(best.sum$adjr2, type="b", main="Adjusted R2")
-```
+cv.ridge <- cv.glmnet(x[train,], y[train], alpha=0)
 
-And then select the best model.
-```{r}
-which.min(best.sum$cp)
-which.min(best.sum$bic)
-which.max(best.sum$adjr2)
-```
+ridge.pred <- predict(cv.ridge,
+                      s=cv.ridge$lambda.min,
+                      newx=x[test,])
 
-Let's extract the coefficients from our best model which uses 4 variables.
-```{r}
-coef(best.fit, which.min(best.sum$cp))
+ridge.mse <- mean((ridge.pred - y[test])^2)
+
+ridge.mse
 ```
 
 ### D
-Forward and Backward Stepwise Selection
-
-```{r}
-fwd.fit <- regsubsets(Y ~ ., data=data, nvmax=10, method="forward")
-
-fwd.sum <- summary(fwd.fit)
-
-which.min(fwd.sum$cp)
-which.min(fwd.sum$bic)
-which.max(fwd.sum$adjr2)
-```
-Let's extract the coefficients from our best models which again uses 4 variables.
-```{r}
-coef(best.fit, which.min(fwd.sum$cp))
-```
-
-
-
-```{r}
-bwd.fit <- regsubsets(Y ~ ., data=data, nvmax=10, method="backward")
-bwd.sum <- summary(bwd.fit)
-
-which.min(bwd.sum$cp)
-which.min(bwd.sum$bic)
-which.max(bwd.sum$adjr2)
-```
-Let's extract the coefficients from our best models which again uses 4 variables.
-
-```{r}
-coef(best.fit, which.min(bwd.sum$cp))
-```
-
-### E
-Lasso Model with Cross-Validation
-```{r}
-X.mat <- model.matrix(Y ~ ., data)[, -1]
-
-set.seed(1)
-cv.lasso <- cv.glmnet(X.mat, Y, alpha = 1)
-plot(cv.lasso)
-```
-
-Let's find the best $\lambda$ and coefficients.
-```{r}
-best.lambda <- cv.lasso$lambda.min
-best.lambda
-
-coef(cv.lasso, s = best.lambda)
-```
-
-## Exercise 10
-Generate data
-### A
+Fit a lasso model on the training set, with $\lambda$ chosen by cross-validation. Report the test error and number of non-zero coefficient estimates.
 ```{r}
 set.seed(1)
 
-n  <- 1000
-p  <- 20
+cv.lasso <- cv.glmnet(x[train,], y[train], alpha=1)
 
-beta.true <- c(3, -2, 0, 0, 1.5, rep(0, p-5))
+lasso.pred <- predict(cv.lasso,
+                      s=cv.lasso$lambda.min,
+                      newx=x[test,])
 
-# X
-X  <- matrix(rnorm(n * p), n, p)
-eps <- rnorm(n)
+lasso.mse <- mean((lasso.pred - y[test])^2)
 
-# Response
-Y <- X %*% beta.true + eps
+lasso.mse
 ```
 
-### B
-Train/Test split
+Number of non-zero coefficients:
 ```{r}
-train.idx <- sample(1:n, 100)
-test.idx  <- setdiff(1:n, train.idx)
+lasso.coef <- predict(cv.lasso,
+                      type="coefficients",
+                      s=cv.lasso$lambda.min)
 
-X.train <- X[train.idx, ]
-X.test  <- X[test.idx, ]
-Y.train <- Y[train.idx]
-Y.test  <- Y[test.idx]
-
-mse <- function(y, yhat) mean((y - yhat)^2)
-```
-
-### C
-Best subset selection
-```{r}
-train.data <- data.frame(Y = Y.train, X.train)
-
-fit.best <- regsubsets(Y ~ ., data = train.data, nvmax = p)
-
-# Extract MSE for each model size
-train.mse <- rep(NA, p)
-
-for (r in 1:p) {
-  coef.r <- coef(fit.best, id = r)
-  X.mat  <- model.matrix(Y ~ ., data = train.data)[, names(coef.r)]
-  yhat   <- X.mat %*% coef.r
-  train.mse[r] <- mse(Y.train, yhat)
-}
-
-plot(1:p, train.mse, type="l", lwd=2,
-     xlab="Model Size", ylab="Training MSE",
-     main="Training MSE vs Model Size")
-```
-
-### D
-Test MSE for best model of each size
-```{r}
-test.data <- data.frame(Y = Y.test, X.test)
-test.mse <- rep(NA, p)
-
-for (r in 1:p) {
-  coef.r <- coef(fit.best, id = r)
-  X.mat  <- model.matrix(Y ~ ., data = test.data)[, names(coef.r)]
-  yhat   <- X.mat %*% coef.r
-  test.mse[r] <- mse(Y.test, yhat)
-}
-
-plot(1:p, test.mse, type="l", lwd=2,
-     xlab="Model Size", ylab="Test MSE",
-     main="Test MSE vs Model Size")
+sum(lasso.coef != 0)
 ```
 
 ### E
-Find model size that minimizes MSE
+Fit a PCR model on the training set, with $M$ chosen by cross-validation. Report the test error obtained, along with the value of $M$ selected by cross-validation.
 ```{r}
-best.size <- which.min(test.mse)
-best.size
-test.mse[best.size]
+set.seed(1)
+
+pcr.fit <- pcr(Apps~., data=College,
+               subset=train,
+               scale=TRUE,
+               validation="CV")
+
+validationplot(pcr.fit, val.type="MSEP")
+
+pcr.pred <- predict(pcr.fit,
+                    College[test,],
+                    ncomp=10)
+
+pcr.mse <- mean((pcr.pred - College$Apps[test])^2)
+
+pcr.mse
 ```
+
+$M$ value:
+```{r}
+summary(pcr.fit)
+```
+
 
 ### F
-Compare estimated coefficients and true $\beta$ value
+Fit a PLS model on the training set, with $M$ chosen by cross-validation. Report the test error obtained, along with the value of $M$ selected by cross-validation.
 ```{r}
-coef.best <- coef(fit.best, id = best.size)
-coef.best
-beta.true
+set.seed(1)
+
+pls.fit <- plsr(Apps~., data=College,
+                subset=train,
+                scale=TRUE,
+                validation="CV")
+
+validationplot(pls.fit, val.type="MSEP")
+
+pls.pred <- predict(pls.fit,
+                    College[test,],
+                    ncomp=10)
+
+pls.mse <- mean((pls.pred - College$Apps[test])^2)
+
+pls.mse
 ```
+
+$M$ value:
+```{r}
+summary(pls.fit)
+```
+
+### G
+How accurately can we predict the number of college applications received? Is there much difference among the test errors resulting from these five approaches?
+```{r}
+data.frame(
+Method=c("Linear","Ridge","Lasso","PCR","PLS"),
+Test_MSE=c(lm.test.mse,ridge.mse,lasso.mse,pcr.mse,pls.mse))
+```
+
+
+## Exercise 11
+We will now try to predict per capita crime rate in the Boston data set.
+### A
+#### Best Subset
+```{r}
+data(Boston)
+
+set.seed(1)
+train <- sample(1:nrow(Boston), nrow(Boston)/2)
+test <- -train
+
+regfit <- regsubsets(crim ~ ., data = Boston[train,], nvmax = 13)
+
+reg.summary <- summary(regfit)
+
+predict.regsubsets <- function(object, newdata, id){
+  form <- as.formula(object$call[[2]])
+  mat <- model.matrix(form, newdata)
+  coefi <- coef(object, id = id)
+  xvars <- names(coefi)
+  mat[, xvars] %*% coefi
+}
+
+n.models <- length(reg.summary$rsq)
+
+val.errors <- rep(NA, n.models)
+
+for(i in 1:n.models){
+  pred <- predict.regsubsets(regfit, Boston[test,], id = i)
+  
+  val.errors[i] <- mean((Boston$crim[test] - pred)^2)
+}
+
+val.errors[which.min(val.errors)]
+```
+
+#### Ridge Regression
+```{r}
+x <- model.matrix(crim~., Boston)[,-1]
+y <- Boston$crim
+
+cv.ridge <- cv.glmnet(x[train,],y[train],alpha=0)
+
+ridge.pred <- predict(cv.ridge,
+                      s=cv.ridge$lambda.min,
+                      newx=x[test,])
+
+mean((ridge.pred-y[test])^2)
+```
+
+#### Lasso
+```{r}
+cv.lasso <- cv.glmnet(x[train,],y[train],alpha=1)
+
+lasso.pred <- predict(cv.lasso,
+                      s=cv.lasso$lambda.min,
+                      newx=x[test,])
+
+mean((lasso.pred-y[test])^2)
+```
+
+#### Principal Component Regression (PCR)
+```{r}
+pcr.fit <- pcr(crim~., data=Boston,
+               subset=train,
+               scale=TRUE,
+               validation="CV")
+
+pcr.pred <- predict(pcr.fit,
+                    Boston[test,],
+                    ncomp=6)
+
+mean((pcr.pred-Boston$crim[test])^2)
+```
+
+### B
+Our best models are produces using ridge regression, lasso, and best subset selection. These methods all balance bias and variance well, producing a strong interpretable result. I would choose the best subset selection model since it has the lowest validation set error of $40.14557$.
+
+### C
+No, the model does not use all predictors. This is because some predictors contribute little helpful information to our model. Reducing these less helpful predictors can help reduce and prevent the risk of overfitting. 

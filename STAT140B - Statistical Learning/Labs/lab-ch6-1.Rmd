@@ -1,0 +1,209 @@
+---
+title: "lab-ch6-1"
+author: "Austin Melendez"
+date: "2026-03-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages("leaps")
+#install.packages("glmnet")
+library(leaps)
+library(glmnet)
+```
+
+
+Section 6.6: Exercises 8, 10
+
+## Exercise 8
+### A
+Generate a predictor X of length n = 100, as well as a noise vector $\epsilon$ of length n = 100.
+```{r}
+set.seed(1)
+n <- 100
+X <- rnorm(n)
+eps <- rnorm(n, sd = 1)
+```
+
+### B
+Generate a response vector Y of length n = 100.
+```{r}
+beta0 <- 1
+beta1 <- 2
+beta2 <- 3
+beta3 <- 4
+
+Y <- beta0 + beta1*X + beta2*X^2 + beta3*X^3 + eps
+```
+
+### C
+```{r}
+data <- data.frame(Y = Y, X = X)
+for (i in 2:10) data[paste0("X", i)] <- X^i
+
+best.fit <- regsubsets(Y ~ ., data = data, nvmax = 10)
+best.sum <- summary(best.fit)
+```
+
+Let's plot $Cp$, $BIC$, and adjusted $R^2$.
+```{r}
+plot(best.sum$cp, type="b", main="Cp")
+plot(best.sum$bic, type="b", main="BIC")
+plot(best.sum$adjr2, type="b", main="Adjusted R2")
+```
+
+And then select the best model.
+```{r}
+which.min(best.sum$cp)
+which.min(best.sum$bic)
+which.max(best.sum$adjr2)
+```
+
+Let's extract the coefficients from our best model which uses 4 variables.
+```{r}
+coef(best.fit, which.min(best.sum$cp))
+```
+
+### D
+Forward and Backward Stepwise Selection
+
+```{r}
+fwd.fit <- regsubsets(Y ~ ., data=data, nvmax=10, method="forward")
+
+fwd.sum <- summary(fwd.fit)
+
+which.min(fwd.sum$cp)
+which.min(fwd.sum$bic)
+which.max(fwd.sum$adjr2)
+```
+Let's extract the coefficients from our best models which again uses 4 variables.
+```{r}
+coef(best.fit, which.min(fwd.sum$cp))
+```
+
+
+
+```{r}
+bwd.fit <- regsubsets(Y ~ ., data=data, nvmax=10, method="backward")
+bwd.sum <- summary(bwd.fit)
+
+which.min(bwd.sum$cp)
+which.min(bwd.sum$bic)
+which.max(bwd.sum$adjr2)
+```
+Let's extract the coefficients from our best models which again uses 4 variables.
+
+```{r}
+coef(best.fit, which.min(bwd.sum$cp))
+```
+
+### E
+Lasso Model with Cross-Validation
+```{r}
+X.mat <- model.matrix(Y ~ ., data)[, -1]
+
+set.seed(1)
+cv.lasso <- cv.glmnet(X.mat, Y, alpha = 1)
+plot(cv.lasso)
+```
+
+Let's find the best $\lambda$ and coefficients.
+```{r}
+best.lambda <- cv.lasso$lambda.min
+best.lambda
+
+coef(cv.lasso, s = best.lambda)
+```
+
+## Exercise 10
+Generate data
+### A
+```{r}
+set.seed(1)
+
+n  <- 1000
+p  <- 20
+
+beta.true <- c(3, -2, 0, 0, 1.5, rep(0, p-5))
+
+# X
+X  <- matrix(rnorm(n * p), n, p)
+eps <- rnorm(n)
+
+# Response
+Y <- X %*% beta.true + eps
+```
+
+### B
+Train/Test split
+```{r}
+train.idx <- sample(1:n, 100)
+test.idx  <- setdiff(1:n, train.idx)
+
+X.train <- X[train.idx, ]
+X.test  <- X[test.idx, ]
+Y.train <- Y[train.idx]
+Y.test  <- Y[test.idx]
+
+mse <- function(y, yhat) mean((y - yhat)^2)
+```
+
+### C
+Best subset selection
+```{r}
+train.data <- data.frame(Y = Y.train, X.train)
+
+fit.best <- regsubsets(Y ~ ., data = train.data, nvmax = p)
+
+# Extract MSE for each model size
+train.mse <- rep(NA, p)
+
+for (r in 1:p) {
+  coef.r <- coef(fit.best, id = r)
+  X.mat  <- model.matrix(Y ~ ., data = train.data)[, names(coef.r)]
+  yhat   <- X.mat %*% coef.r
+  train.mse[r] <- mse(Y.train, yhat)
+}
+
+plot(1:p, train.mse, type="l", lwd=2,
+     xlab="Model Size", ylab="Training MSE",
+     main="Training MSE vs Model Size")
+```
+
+### D
+Test MSE for best model of each size
+```{r}
+test.data <- data.frame(Y = Y.test, X.test)
+test.mse <- rep(NA, p)
+
+for (r in 1:p) {
+  coef.r <- coef(fit.best, id = r)
+  X.mat  <- model.matrix(Y ~ ., data = test.data)[, names(coef.r)]
+  yhat   <- X.mat %*% coef.r
+  test.mse[r] <- mse(Y.test, yhat)
+}
+
+plot(1:p, test.mse, type="l", lwd=2,
+     xlab="Model Size", ylab="Test MSE",
+     main="Test MSE vs Model Size")
+```
+
+### E
+Find model size that minimizes MSE
+```{r}
+best.size <- which.min(test.mse)
+best.size
+test.mse[best.size]
+```
+
+### F
+Compare estimated coefficients and true $\beta$ value
+```{r}
+coef.best <- coef(fit.best, id = best.size)
+coef.best
+beta.true
+```

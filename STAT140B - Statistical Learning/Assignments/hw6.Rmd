@@ -1,0 +1,165 @@
+---
+title: "hw6"
+author: "Austin Melendez"
+date: "2026-03-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Section 6.6: Exercises 5, 6
+
+## Exercise 5
+Ridge regression tends to give similar coefficient
+values to correlated variables, whereas the lasso may give quite different coefficient values to correlated variables. 
+
+Given $n = 2$, $p = 2$, $x_{11} = x_{12}$, $x_{21} = x_{22}$ we can see that two of the predictors are identical.
+
+We are also given that $y_1 + y_2 = 0$ and $x_{11} + x_{21} = 0$ and $x12 + x22 = 0$, thus the intercept estimate is $\hat{\beta}_0 = 0$
+
+### A
+Write out the ridge regression optimization problem.
+
+$$
+\min_{\beta_1,\beta_2}
+\sum
+(y_1 - \beta_1 x_{11} - \beta_2 x_{12})^2 +
+(y_2 - \beta_1 x_{21} - \beta_2 x_{22})^2 +
+\lambda(\beta_1^2 + \beta_2^2)
+$$
+Since $n = 2$:
+$$
+=
+(y_1 - \beta_1x_{11}-\beta_2x_{12})^2 +
+(y_2 - \beta_1x_{21}+\beta_2x_{22})^2 +
+\lambda(\beta_1^2+\beta_2^2)
+$$
+
+Since $x_{11} = x_{12}$ and $x_{21} = x_{22}$:
+
+$$
+=
+(y_1 - (\beta_1+\beta_2)x_{11})^2 +
+(y_2 - (\beta_1+\beta_2)x_{21})^2 +
+\lambda(\beta_1^2+\beta_2^2)
+$$
+
+### B
+Show ridge gives $\hat{\beta}_1 = \hat{\beta}_2$.
+
+The loss depends only on:
+$$
+(\beta_1+\beta_2)
+$$
+and not on each coefficient individually.
+
+But the ridge penalty is:
+$$
+\beta_1^2 + \beta_2^2
+$$
+for a fixed value of:
+$$
+\beta_1+\beta_2 = c
+$$
+The penalty is minimized when coefficients are euqal
+$$
+\beta_1 = \beta_2 = c/2
+$$
+because this splits the magnitude evenly and minimizes squares. Thus the ridge solution satisfies:
+$$
+\hat{\beta}_1 = \hat{\beta}_2
+$$.
+
+This explains why ridge distributes weight across correlated predictors.
+
+### C 
+Write out the lasso optimization problem in this setting.
+
+$$
+\min_{\beta_1,\beta_2}
+\sum
+(y_1 - \beta_1 x_{11} - \beta_2 x_{12})^2 +
+(y_2 - \beta_1 x_{21} - \beta_2 x_{22})^2 +
+\lambda(|\beta_1| + |\beta_2|)
+$$
+Substituting predictors:
+$$
+=
+(y_1 - (\beta_1+\beta_2)x_{11})^2 +
+(y_2 - (\beta_1+\beta_2)x_{21})^2 +
+\lambda(|\beta_1| + |\beta_2|)
+$$
+Again the prediction depends only on:
+$$
+\beta_1 + \beta_2
+$$
+
+### D 
+Argue that the lasso coefficients $\hat{\beta}_1$ and $\hat{\beta}_2$ are not unique in this setting.
+
+Because predictions depend only on:
+$$
+\beta_1 + \beta_2 = c
+$$
+any pair satisfying this produces the same fitted values.
+$$
+(\beta_1,\beta_2) = (c,0)
+$$
+$$
+(\beta_1,\beta_2) = (0,c)
+$$
+All produce identical predictions. Thus the lasso solution is not unique.
+
+Therefore there are many solutions satisfying
+$$
+\beta_1 + \beta_2 = c
+$$
+This is why lasso may pick one correlated variable and drop another.
+
+## Exercise 6
+Exploring Ridge and Lasso
+
+### A
+Consider Ridge objective with p = 1. For some choice of $y_1$ and $\lambda > 0$, plot ridge as a function of $\beta_1$.
+
+For $p = 1$:
+$$
+\min_{\beta_1}
+(y_1 - \beta_1)^2 + \lambda \beta_1^2
+$$
+Which expands too:
+$$
+= y_1^2 - 2y_1\beta_1 + (1+\lambda)\beta_1^2
+$$
+Take derivative:
+$$
+\frac{d}{d\beta_1}
+=
+-2y_1 + 2(1+\lambda)\beta_1
+$$
+
+Set equal to zero:
+$$
+\hat{\beta}_1 = \frac{y_1}{1+\lambda}
+$$
+
+### B
+Consider Lasso objective with p = 1. For some choice of $y_1$ and $\lambda > 0$, plot lasso as a function of $\beta_1$.
+
+For $p = 1$:
+$$
+\min_{\beta_1}
+(y_1 - \beta_1)^2 + \lambda |\beta_1|
+$$
+
+The solution is the soft-thresholding estimator:
+$$
+\hat{\beta}_1 =
+\begin{cases}
+y_1 - \lambda/2 & y_1 > \lambda/2 \\
+y_1 + \lambda/2 & y_1 < -\lambda/2 \\
+0 & |y_1| \le \lambda/2
+\end{cases}
+$$

@@ -9,14 +9,114 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Section 5.4: Exercises 3, 4
+Section 6.6: Exercises 1, 2, 3, 4
+
+## Exercise 1
+We perform best subset, forward stepwise, and backward stepwise selection on a single data set. For each approach, we obtain $p + 1$ models, containing $0, 1, 2, ..., p$ predictors. 
+
+### A
+Best subset tries every possible combination of k predictors and picks the one with the smallest RSS.
+
+Forward and backward only explore some paths, not all possibilities, so they may miss the smallest RSS model.
+
+### B
+Training RSS does not guarantee lowest test RSS because of overfitting.
+
+Forward or backward might generalize better on the test set even if training RSS is larger.
+
+### C
+True or False:
+
+#### i 
+True, forward stepwise adds one variable at a time so the nest model contains all previous predictors.
+
+#### ii
+True, backward stepwise starts with all variab les and removes one at a time so the larger model will contain the smaller one.
+
+#### iii
+False, forward and backward follow different paths so predictors may differ they aren't subsets of eachother..
+
+#### iv
+False, same thing, forward and backward follow different paths so predictors may differ they aren't subsets of eachother.
+
+#### v
+False, Best subset independently finds the best model for each size, so variables may change completely (be removed).
+
+## Exercise 2
+
+### A
+Lasso vs Least Squares
+
+Lasso uses an L1 penalty, which shrinks coefficients. Therefore it is less flexible than least squares.
+
+iii. *Less flexible and hence will give improved prediction accuracy when its increase in bias is less than its decrease in variance.*
+
+### B
+Ridge Regression vs Least Squares
+
+Ridge also adds a penalty, shrinking coefficients. This makes it less flexible, but reduces variance and increases bias.
+
+iii. *Less flexible and hence will give improved prediction accuracy when its increase in bias is less than its decrease in variance.*
+
+### C
+Non-linear Methods vs Least Squares
+
+Nonlinear models are the most flexible. They reduce bias but increase variance.
+
+ii. *More flexible and hence will give improved prediction accuracy when its increase in variance is less than its decrease in bias.*
 
 ## Exercise 3
-
+Suppose we estimate the regression coefficients in a linear regression model by minimizing. As s increases, the constraint relaxes, meaning the model becomes more flexible. (Lasso)
 
 ### A
+Training RSS
+
+iv. Steadily decrease
+
+### B
+Test RSS
+
+ii. U-shape
+
+### C
+Variance
+
+iii. Steadily increase
+
+### D
+Squared Bias
+
+iv. Steadily decrease
+
+### E
+Irreducible Error
+
+v. Remain constant
 
 ## Exercise 4
-
+Suppose we estimate the regression coefficients in a linear regression model by minimizing. As λ increases, the penalty becomes stronger, meaning the model becomes less flexible. (Ridge Regression)
 
 ### A
+Training RSS
+
+iii. Steadily increase
+
+### B
+Test RSS
+
+ii. U-shape
+
+### C
+Variance
+
+iv. Steadily decrease
+
+### D
+Squared Bias
+
+iii. Steadily increase
+
+### E
+Irreducible Error
+
+v. Remain constant
