@@ -1,0 +1,452 @@
+
+---
+title: "ISLR2 Chapters 2–6 Reference Sheet"
+author: ""
+output: html_document
+---
+
+# Chapter 2 – Statistical Learning
+
+## Model Framework
+
+Statistical learning models the relationship between predictors \(X\) and a response \(Y\):
+
+$$
+Y = f(X) + \varepsilon
+$$
+
+- \(f(X)\): systematic component
+- \(\varepsilon\): irreducible error
+
+### Prediction Error Decomposition
+
+Expected test MSE:
+
+$$
+E[(Y - \hat{f}(X))^2] = Bias^2 + Variance + Var(\varepsilon)
+$$
+
+**Bias**
+- Error from simplifying assumptions
+
+**Variance**
+- Sensitivity to training data
+
+**Irreducible Error**
+- Noise that cannot be eliminated
+
+---
+
+## Supervised vs Unsupervised Learning
+
+**Supervised Learning**
+- Response variable \(Y\) is observed
+- Goal: predict \(Y\) or understand relationships
+
+Examples:
+- Linear regression
+- Logistic regression
+- LDA / QDA
+- KNN
+
+**Unsupervised Learning**
+- No response variable
+- Goal: find structure or patterns
+
+Examples:
+- Clustering
+- Principal Component Analysis (PCA)
+
+---
+
+## Parametric vs Non‑Parametric
+
+### Parametric
+
+Assume a functional form for \(f(X)\).
+
+Example:
+
+$$
+f(X) = \beta_0 + \beta_1 X
+$$
+
+Advantages
+- Simple
+- Interpretable
+- Requires less data
+
+Disadvantages
+- Model misspecification possible
+
+Examples
+- Linear regression
+- Logistic regression
+- LDA
+
+### Non‑Parametric
+
+No assumption about functional form.
+
+Advantages
+- Flexible
+- Captures complex patterns
+
+Disadvantages
+- Requires more data
+- Higher variance
+
+Examples
+- KNN
+- Splines
+- Local regression
+
+---
+
+# Chapter 3 – Linear Regression
+
+## Simple Linear Regression
+
+$$
+Y = \beta_0 + \beta_1 X + \varepsilon
+$$
+
+Coefficients estimated using **least squares**:
+
+$$
+RSS = \sum_{i=1}^{n} (y_i - \hat{y}_i)^2
+$$
+
+Minimize RSS to obtain \(\hat{\beta}_0, \hat{\beta}_1\).
+
+---
+
+## Multiple Linear Regression
+
+$$
+Y = \beta_0 + \beta_1X_1 + \beta_2X_2 + ... + \beta_pX_p + \varepsilon
+$$
+
+---
+
+## Model Metrics
+
+### Residual Sum of Squares
+
+$$
+RSS = \sum (y_i - \hat{y}_i)^2
+$$
+
+### Total Sum of Squares
+
+$$
+TSS = \sum (y_i - \bar{y})^2
+$$
+
+### \(R^2\)
+
+$$
+R^2 = 1 - \frac{RSS}{TSS}
+$$
+
+### Adjusted \(R^2\)
+
+$$
+R^2_{adj} =
+1 - \frac{RSS/(n-p-1)}{TSS/(n-1)}
+$$
+
+---
+
+## Assumptions of Linear Regression
+
+1. Linearity
+2. Independence of errors
+3. Constant variance
+
+$$
+Var(\varepsilon_i) = \sigma^2
+$$
+
+4. Normality of errors
+
+---
+
+# Chapter 4 – Classification
+
+## Logistic Regression
+
+Probability model:
+
+$$
+P(Y=1|X) =
+\frac{e^{\beta_0+\beta_1X}}{1+e^{\beta_0+\beta_1X}}
+$$
+
+Log‑odds form:
+
+$$
+\log\left(\frac{P(Y=1|X)}{1-P(Y=1|X)}\right)
+= \beta_0 + \beta_1X
+$$
+
+Prediction rule:
+
+If
+
+$$
+P(Y=1|X) > 0.5
+$$
+
+predict class 1.
+
+---
+
+## Linear Discriminant Analysis (LDA)
+
+Assumes predictors follow a normal distribution within each class.
+
+Discriminant function:
+
+$$
+\delta_k(x) =
+x^T \Sigma^{-1}\mu_k
+- \frac{1}{2}\mu_k^T \Sigma^{-1}\mu_k
++ \log \pi_k
+$$
+
+Where
+
+- \(\mu_k\) = class mean
+- \(\Sigma\) = shared covariance
+- \(\pi_k\) = class prior probability
+
+Decision rule: choose class with largest \(\delta_k(x)\).
+
+---
+
+## Quadratic Discriminant Analysis (QDA)
+
+Same as LDA but covariance differs by class.
+
+Decision boundaries become **quadratic**.
+
+---
+
+## K‑Nearest Neighbors (KNN)
+
+Prediction based on nearest observations.
+
+Advantages
+- Flexible
+- No model assumptions
+
+Disadvantages
+- Sensitive to irrelevant variables
+- Poor in high dimensions
+
+---
+
+# Chapter 5 – Resampling Methods
+
+## Validation Set Approach
+
+Split data:
+
+- Training set
+- Validation set
+
+Validation error:
+
+$$
+MSE =
+\frac{1}{n_{val}}
+\sum (y_i - \hat{y}_i)^2
+$$
+
+Advantages
+- Simple
+
+Disadvantages
+- High variability
+
+---
+
+## k‑Fold Cross‑Validation
+
+Procedure
+
+1. Divide data into \(k\) folds
+2. Train on \(k-1\) folds
+3. Validate on remaining fold
+4. Repeat for all folds
+5. Average errors
+
+CV error:
+
+$$
+CV = \frac{1}{k}
+\sum_{i=1}^{k} MSE_i
+$$
+
+Advantages
+- More stable than validation set
+
+Disadvantages
+- More computational cost
+
+---
+
+## LOOCV
+
+Special case of k‑fold CV where
+
+$$
+k = n
+$$
+
+Advantages
+- Low bias
+
+Disadvantages
+- High variance
+- Slow for large datasets
+
+---
+
+## Bootstrap
+
+Sample **with replacement**.
+
+Used to estimate:
+
+- Standard errors
+- Confidence intervals
+
+Bootstrap estimate of SE:
+
+$$
+SE_{boot} =
+\sqrt{\frac{1}{B-1}
+\sum_{b=1}^{B}(\hat{\theta}_b-\bar{\theta})^2}
+$$
+
+---
+
+# Chapter 6 – Linear Model Selection & Regularization
+
+## Best Subset Selection
+
+Fit all possible models.
+
+Choose using:
+
+- \(C_p\)
+- BIC
+- Adjusted \(R^2\)
+
+---
+
+## Forward Stepwise Selection
+
+Start with no predictors.
+
+Add predictor that improves model most.
+
+---
+
+## Backward Stepwise Selection
+
+Start with full model.
+
+Remove least useful predictor.
+
+Requires
+
+$$
+n > p
+$$
+
+---
+
+## Ridge Regression
+
+Optimization problem:
+
+$$
+\sum (y_i - \hat{y}_i)^2
++ \lambda \sum_{j=1}^{p} \beta_j^2
+$$
+
+Effects
+- Shrinks coefficients toward zero
+- Reduces variance
+
+Properties
+- Keeps all predictors
+
+---
+
+## Lasso Regression
+
+Optimization problem:
+
+$$
+\sum (y_i - \hat{y}_i)^2
++ \lambda \sum_{j=1}^{p} |\beta_j|
+$$
+
+Effects
+- Shrinks coefficients
+- Some become **exactly zero**
+
+Provides **automatic variable selection**.
+
+---
+
+## Principal Component Analysis (PCA)
+
+Transforms predictors into orthogonal components.
+
+Component:
+
+$$
+Z_m =
+\sum_{j=1}^{p} \phi_{jm} X_j
+$$
+
+Where \(\phi_{jm}\) maximizes variance.
+
+---
+
+## Principal Component Regression (PCR)
+
+Steps
+
+1. Compute principal components
+2. Use first \(M\) components in regression
+
+Model:
+
+$$
+Y =
+\theta_0 +
+\theta_1 Z_1 +
+... +
+\theta_M Z_M +
+\varepsilon
+$$
+
+---
+
+## Partial Least Squares (PLS)
+
+Similar to PCR but components depend on **both predictors and response**.
+
+Goal: maximize covariance between components and \(Y\).
+
+Advantages
+- Often better predictive performance than PCR
+
+Disadvantages
+- Harder to interpret
