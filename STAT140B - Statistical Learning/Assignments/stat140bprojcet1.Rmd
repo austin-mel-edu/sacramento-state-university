@@ -1,0 +1,385 @@
+---
+title: "project1"
+author: "Austin Melendez"
+date: "2026-03-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages("ISLR2")
+#install.packages("tidyverse")
+#install.packages("MASS")
+#install.packages("class")
+#install.packages("e1071")
+
+library(ISLR2)
+library(tidyverse)
+library(MASS)
+library(class)
+library(e1071)
+```
+
+
+# 1. Dataset Description
+This project uses the [Congressional Voting Records Dataset](https://archive.ics.uci.edu/dataset/105/congressional+voting+records), available from the UCI Machine Learning Repository:
+
+[https://archive.ics.uci.edu/dataset/105/congressional+voting+records](https://archive.ics.uci.edu/dataset/105/congressional+voting+records)
+
+### Overview:
+* Observations: 435 members of the U.S. House of Representatives
+* Response Variable: Class Name (Democrat or Republican)
+* Attributes: 16 key votes on issues (El Salvador aid, education spending, etc.)
+  * Values:
+    * y = yes
+    * n = no
+    * ? = abstention/absence
+
+The data dictionary, `.names` file, describes the attribute information:
+
+* Class Name: 2 (democrat, republican)
+* handicapped-infants: 2 (y,n)
+* water-project-cost-sharing: 2 (y,n)
+* adoption-of-the-budget-resolution: 2 (y,n)
+* physician-fee-freeze: 2 (y,n)
+* el-salvador-aid: 2 (y,n)
+* religious-groups-in-schools: 2 (y,n)
+* anti-satellite-test-ban: 2 (y,n)
+* aid-to-nicaraguan-contras: 2 (y,n)
+* mx-missile: 2 (y,n)
+* immigration: 2 (y,n)
+* synfuels-corporation-cutback: 2 (y,n)
+* education-spending: 2 (y,n)
+* superfund-right-to-sue: 2 (y,n)
+* crime: 2 (y,n)
+* duty-free-exports: 2 (y,n)
+* export-administration-act-south-africa: 2 (y,n)
+    
+### Goal:
+We want to *predict party affiliation* based on their voting patterns.
+
+# 2. Importing the Data
+```{r}
+library(tidyverse)
+
+# Load data
+url <- "https://archive.ics.uci.edu/ml/machine-learning-databases/voting-records/house-votes-84.data"
+
+votes <- read.csv(url, header = FALSE)
+
+# Assign column names
+colnames(votes) <- c("party","handicapped-infants","water-project-cost-sharing","adoption-of-budget-resolution","physician-fee-freeze","el-salvador-aid","religious-groups-in-schools","anti-satellite-test-ban","aid-to-nicaraguan-contras","mx-missile","immigration","synfuels-corporation-cutback","education-spending","superfund-right-to-sue","crime","duty-free-exports","export-administration-act")
+```
+
+I have to manually assign column names because the dataset does not include headers in their `.data` file. Luckily their `.names` file contains the data dictionary which provides the column names.
+
+# 3. Data Cleaning
+Looking through the `.names` file also shows us that there are multiple missing values across the dataset. These are encoded as $?$ strings, originally I was going to map these values to $NA$, but looking through the `.names` file it describes the missing attribute values:
+
+  * Denoted by "?"
+  * Important Note:
+    * "?" does NOT mean the value is unknown
+    * It means the vote was neither "yea" nor "nay" ( abstention or absence)
+
+"Missing" Values by Attribute:
+
+* Attribute 1: 0
+* Attribute 2: 0
+* Attribute 3: 12
+* Attribute 4: 48
+* Attribute 5: 11
+* Attribute 6: 11
+* Attribute 7: 15
+* Attribute 8: 11
+* Attribute 9: 14
+* Attribute 10: 15
+* Attribute 11: 22
+* Attribute 12: 7
+* Attribute 13: 21
+* Attribute 14: 31
+* Attribute 15: 25
+* Attribute 16: 17
+* Attribute 17: 28
+  
+Therefore, rather than treating "?" values as missing, I have kept them as a separate categorical level.
+```{r}
+# Convert to factors
+votes <- votes %>%
+  mutate(across(everything(), as.factor))
+```
+
+# 4. Exploratory Data Analysis
+## 4.1 Class Balance
+```{r}
+table(votes$party)
+prop.table(table(votes$party))
+```
+The dataset is relatively balanced between Democrats and Republicans, which is good so that models won’t be biased toward one class or the other. Since our data is balance, this also means we can use accuracy as an appropriate performance metric for our classification models.
+
+## 4.2 Variable Distribution
+```{r}
+summary(votes)
+```
+Some of the votes show strong skew towards one direction or the other, I would guess this is often because of party-line voting.
+
+```{r}
+ggplot(votes, aes(x = `physician-fee-freeze`, fill = party)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = c("democrat" = "blue", "republican" = "red")) +
+  labs(title = "Voting Pattern by Party",
+       y = "Proportion")
+```
+As I predicted, some of the voting records fall extremely along party lines! This means the voting record could be powerful in predicting party affiliation.
+
+## 4.3 Missing Data
+```{r}
+colSums(is.na(votes))
+```
+No rows contain any missing values!
+
+## 4.4 Validation Set Approach
+```{r}
+set.seed(1)
+
+train_index <- sample(1:nrow(votes), nrow(votes)/2)
+
+train <- votes[train_index, ]
+test  <- votes[-train_index, ]
+```
+
+# 5. Creating Models
+## 5.1 Logistic Regression
+```{r}
+glm_fit <- glm(party ~ ., data = train, family = binomial)
+
+glm_probs <- predict(glm_fit, test, type = "response")
+glm_pred <- ifelse(glm_probs > 0.5, "republican", "democrat")
+
+# Accuracy
+mean(glm_pred == test$party)
+# Error Rate
+mean(glm_pred != test$party)
+```
+
+## 5.2 Linear Discriminant Analysis
+```{r}
+lda_fit <- lda(party ~ ., data = train)
+
+lda_pred <- predict(lda_fit, test)$class
+
+print("Accuracy:")
+mean(lda_pred == test$party)
+print("Error Rate:")
+mean(lda_pred != test$party)
+```
+
+## 5.3 Quadratic Discriminant Analysis
+```{r}
+#qda_fit <- qda(party ~ ., data = train)
+
+#qda_pred <- predict(qda_fit, test)$class
+
+# Accuracy
+#mean(qda_pred == test$party)
+# Error Rate
+#mean(qda_pred != test$party)
+```
+QDA failed due to rank deficiency, likely caused by strong multicollinearity and our sparse categorical levels (3 categories). Because QDA requires estimation of separate covariance matrices for each class, it is more sensitive to these issues than LDA. Therefore, QDA was excluded from analysis.
+
+## 5.4 Naive Bayes
+```{r}
+nb_fit <- naiveBayes(party ~ ., data = train)
+
+nb_pred <- predict(nb_fit, test)
+
+# Accuracy
+mean(nb_pred == test$party)
+# Error Rate
+mean(nb_pred != test$party)
+```
+
+## 5.5 K-Nearest Neighbors (KNN)
+```{r}
+# Convert factors to numeric
+train_x <- model.matrix(party ~ . -1, train)
+test_x  <- model.matrix(party ~ . -1, test)
+
+train_y <- train$party
+
+set.seed(1)
+knn_pred <- knn(train_x, test_x, train_y, k = 5)
+
+# Accuracy
+mean(knn_pred == test$party)
+# Error Rate
+mean(knn_pred != test$party)
+```
+## 5.6 Model Comparison
+```{r}
+traintest_accuracy <- c(
+  Logistic = mean(glm_pred == test$party),
+  LDA      = mean(lda_pred == test$party),
+  QDA      = NA,
+  NaiveBayes = mean(nb_pred == test$party),
+  KNN      = mean(knn_pred == test$party)
+)
+
+traintest_accuracy
+```
+
+# 6. Cross-Validation Approach
+```{r}
+set.seed(1)
+
+# Number of folds
+k <- 10
+n <- nrow(votes)
+folds <- sample(rep(1:k, length.out = n))
+
+for (i in 1:k) {
+  # Split into training and validation sets
+  train_cv <- votes[folds != i, ]
+  val_cv   <- votes[folds == i, ]
+}
+```
+
+## 6.1 Logistic Regression
+```{r}
+cv_glm_fit <- glm(party ~ ., data = train_cv, family = binomial)
+
+cv_glm_probs <- predict(cv_glm_fit, val_cv, type = "response")
+
+cv_glm_pred <- ifelse(cv_glm_probs > 0.5, "republican", "democrat")
+
+# Accuracy
+mean(cv_glm_pred == val_cv$party)
+# Error Rate
+mean(cv_glm_pred != val_cv$party)
+```
+
+## 6.2 Linear Discriminant Analysis
+```{r}
+cv_lda_fit <- lda(party ~ ., data = train_cv)
+
+cv_lda_pred <- predict(lda_fit, val_cv)$class
+
+# Accuracy
+mean(cv_lda_pred == val_cv$party)
+# Error Rate
+mean(cv_lda_pred != val_cv$party)
+```
+
+## 6.3 Quadratic Discriminant Analysis
+```{r}
+#cv_qda_fit <- qda(party ~ ., data = train_cv)
+
+#cv_qda_pred <- predict(qda_fit, val_cv)$class
+
+# Accuracy
+#mean(cv_qda_pred == val_cv$party)
+# Error Rate
+#mean(cv_qda_pred != val_cv$party)
+```
+QDA failed once again due to rank deficiency, likely caused by strong multicollinearity and our sparse categorical levels (3 categories). Because QDA requires estimation of separate covariance matrices for each class, it is more sensitive to these issues than LDA. Therefore, QDA was excluded from analysis.
+
+## 6.3 Naive Bayes
+```{r}
+cv_nb_fit <- naiveBayes(party ~ ., data = train_cv)
+
+cv_nb_pred <- predict(nb_fit, val_cv)
+
+# Accuracy
+mean(cv_nb_pred == val_cv$party)
+# Error Rate
+mean(cv_nb_pred != val_cv$party)
+```
+
+## 6.4 K-Nearest Neighbors (KNN)
+```{r}
+train_X <- model.matrix(party ~ . -1, train_cv)
+val_X   <- model.matrix(party ~ . -1, val_cv)
+train_Y <- train_cv$party
+  
+cv_knn_pred <- knn(train_X, val_X, train_Y, k = 5)
+
+# Accuracy
+mean(cv_knn_pred == val_cv$party)
+# Error Rate
+mean(cv_knn_pred != val_cv$party)
+```
+
+## 6.5 Model Comparison
+```{r}
+cv_accuracy <- c(
+  Logistic = mean(cv_glm_pred == val_cv$party),
+  LDA      = mean(cv_lda_pred == val_cv$party),
+  QDA      = NA,
+  NaiveBayes = mean(cv_nb_pred == val_cv$party),
+  KNN      = mean(cv_knn_pred == val_cv$party)
+)
+
+cv_accuracy
+```
+
+# 7. Final Model Selection
+Based on both the validation set accuracy and the cross-validation results, Linear Discriminant Analysis (LDA) emerges as the best-performing model. LDA achieved the highest validation set accuracy at 95.0% and maintained strong performance in cross-validation achieving a 97.7%. This outperformed Logistic Regression validation set (94.5%) and CV (93.8%). This also beat KNN validation set accuracy (93.0%) and CV (93.0%). Quadratic Discriminant Analysis (QDA) could not be fit due to rank deficiency issues. Naive Bayes performed the worst on this dataset for both validation (91.2%) and CV (93.0%), likely because the strong dependencies among voting variables violate the independence assumption.
+
+Although Logistic Regression and KNN also achieved high validation accuracy, LDA combines both excellent predictive performance and interpretability, making it the most appropriate choice as the final model.
+
+## 7.1 Confusion Matrix
+```{r}
+# Predict on the test set using the CV LDA model
+lda_pred_test <- predict(cv_lda_fit, test)$class
+
+# Create confusion matrix
+conf_matrix <- table(Predicted = lda_pred_test, Actual = test$party)
+conf_matrix
+```
+
+## 7.2 Other Classification Metrics
+Even though our classes are balanced and we can use the accuracy as a measure of model performance, let's calculate the other common classification model metrics to investigate the exact performance of our final model.
+```{r}
+# Extract counts for Democrat
+TP_dem <- conf_matrix["democrat", "democrat"]
+FP_dem <- conf_matrix["democrat", "republican"]
+FN_dem <- conf_matrix["republican", "democrat"]
+TN_dem <- conf_matrix["republican", "republican"]
+
+# Extract counts for Republican
+TP_rep <- conf_matrix["republican", "republican"]
+FP_rep <- conf_matrix["republican", "democrat"]
+FN_rep <- conf_matrix["democrat", "republican"]
+TN_rep <- conf_matrix["democrat", "democrat"]
+
+# Democrat Metrics
+precision_dem <- TP_dem / (TP_dem + FP_dem)
+recall_dem    <- TP_dem / (TP_dem + FN_dem)
+f1_dem        <- 2 * (precision_dem * recall_dem) / (precision_dem + recall_dem)
+
+# Republican Metrics
+precision_rep <- TP_rep / (TP_rep + FP_rep)
+recall_rep    <- TP_rep / (TP_rep + FN_rep)
+f1_rep        <- 2 * (precision_rep * recall_rep) / (precision_rep + recall_rep)
+
+# Combine into a data frame for easy viewing
+metrics <- data.frame(
+  Class = c("Democrat", "Republican"),
+  Precision = c(precision_dem, precision_rep),
+  Recall = c(recall_dem, recall_rep),
+  F1_Score = c(f1_dem, f1_rep)
+)
+
+metrics
+```
+
+# 8. Conclusion
+The analysis demonstrates that the voting records of U.S. House representatives are highly predictive of party affiliation. LDA, our final selected model, is able to accurately classify representatives as Democrats or Republicans based on their voting behavior with minimal error.
+
+* Voting behavior is strongly structured and differs consistently between parties.
+* Simpler linear methods like LDA or Logistic Regression perform better than methods that assume independence (Naive Bayes) or require complex covariance estimation (QDA).
+* KNN performs reasonably well but does not offer interpretability or advantages over LDA in this setting.
+
+Overall, LDA provides both accuracy and interpretability, making it the ideal model for classifying party affiliation from voting records.
