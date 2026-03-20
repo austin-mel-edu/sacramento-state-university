@@ -703,50 +703,91 @@ k &lt;- 10
 n &lt;- nrow(votes)
 folds &lt;- sample(rep(1:k, length.out = n))
 
-for (i in 1:k) {
+cv_glm_acc &lt;- numeric(k)
+cv_lda_acc &lt;- numeric(k)
+cv_nb_acc  &lt;- numeric(k)
+cv_knn_acc &lt;- numeric(k)</code></pre>
+<div id="logistic-regression-1" class="section level2">
+<h2>6.1 Logistic Regression</h2>
+<pre class="r"><code>for (i in 1:k) {
   # Split into training and validation sets
   train_cv &lt;- votes[folds != i, ]
   val_cv   &lt;- votes[folds == i, ]
+
+  cv_glm_fit &lt;- glm(party ~ ., data = train_cv, family = binomial)
+
+  cv_glm_probs &lt;- predict(cv_glm_fit, val_cv, type = &quot;response&quot;)
+
+  cv_glm_pred &lt;- ifelse(cv_glm_probs &gt; 0.5, &quot;republican&quot;, &quot;democrat&quot;)
+  
+  cv_glm_acc[i] &lt;- mean(cv_glm_pred == val_cv$party)
 }</code></pre>
-<div id="logistic-regression-1" class="section level2">
-<h2>6.1 Logistic Regression</h2>
-<pre class="r"><code>cv_glm_fit &lt;- glm(party ~ ., data = train_cv, family = binomial)</code></pre>
 <pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
 <pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
-<pre class="r"><code>cv_glm_probs &lt;- predict(cv_glm_fit, val_cv, type = &quot;response&quot;)
-
-cv_glm_pred &lt;- ifelse(cv_glm_probs &gt; 0.5, &quot;republican&quot;, &quot;democrat&quot;)
-
-# Accuracy
-mean(cv_glm_pred == val_cv$party)</code></pre>
-<pre><code>## [1] 0.9534884</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre class="r"><code># Accuracy
+mean(cv_glm_acc)</code></pre>
+<pre><code>## [1] 0.937685</code></pre>
 <pre class="r"><code># Error Rate
-mean(cv_glm_pred != val_cv$party)</code></pre>
-<pre><code>## [1] 0.04651163</code></pre>
+mean(1 - cv_glm_acc)</code></pre>
+<pre><code>## [1] 0.06231501</code></pre>
 </div>
 <div id="linear-discriminant-analysis-1" class="section level2">
 <h2>6.2 Linear Discriminant Analysis</h2>
-<pre class="r"><code>cv_lda_fit &lt;- lda(party ~ ., data = train_cv)
+<pre class="r"><code>for (i in 1:k) {
+  # Split into training and validation sets
+  train_cv &lt;- votes[folds != i, ]
+  val_cv   &lt;- votes[folds == i, ]
 
-cv_lda_pred &lt;- predict(lda_fit, val_cv)$class
+  cv_lda_fit &lt;- lda(party ~ ., data = train_cv)
+
+  cv_lda_pred &lt;- predict(cv_lda_fit, val_cv)$class
+  
+  cv_lda_acc[i] &lt;- mean(cv_lda_pred == val_cv$party)
+}
 
 # Accuracy
-mean(cv_lda_pred == val_cv$party)</code></pre>
-<pre><code>## [1] 0.9767442</code></pre>
+mean(cv_lda_acc)</code></pre>
+<pre><code>## [1] 0.9540169</code></pre>
 <pre class="r"><code># Error Rate
-mean(cv_lda_pred != val_cv$party)</code></pre>
-<pre><code>## [1] 0.02325581</code></pre>
+mean(1 - cv_lda_acc)</code></pre>
+<pre><code>## [1] 0.04598309</code></pre>
 </div>
 <div id="quadratic-discriminant-analysis-1" class="section level2">
 <h2>6.3 Quadratic Discriminant Analysis</h2>
-<pre class="r"><code>#cv_qda_fit &lt;- qda(party ~ ., data = train_cv)
+<pre class="r"><code>#for (i in 1:k) {
+  # Split into training and validation sets
+  #train_cv &lt;- votes[folds != i, ]
+  #val_cv   &lt;- votes[folds == i, ]
+  
+  #cv_qda_fit &lt;- qda(party ~ ., data = train_cv)
 
-#cv_qda_pred &lt;- predict(qda_fit, val_cv)$class
+  #cv_qda_pred &lt;- predict(qda_fit, val_cv)$class
 
+  #cv_qda_acc[i] &lt;- mean(cv_qda_pred == val_cv$party)
+#}
+  
 # Accuracy
-#mean(cv_qda_pred == val_cv$party)
+#mean(cv_qda_acc)
 # Error Rate
-#mean(cv_qda_pred != val_cv$party)</code></pre>
+#mean(1 - cv_qda_acc)</code></pre>
 <p>QDA failed once again due to rank deficiency, likely caused by strong
 multicollinearity and our sparse categorical levels (3 categories).
 Because QDA requires estimation of separate covariance matrices for each
@@ -755,45 +796,67 @@ excluded from analysis.</p>
 </div>
 <div id="naive-bayes-1" class="section level2">
 <h2>6.3 Naive Bayes</h2>
-<pre class="r"><code>cv_nb_fit &lt;- naiveBayes(party ~ ., data = train_cv)
+<pre class="r"><code>for (i in 1:k) {
+  # Split into training and validation sets
+  train_cv &lt;- votes[folds != i, ]
+  val_cv   &lt;- votes[folds == i, ]
 
-cv_nb_pred &lt;- predict(nb_fit, val_cv)
+  cv_nb_fit &lt;- naiveBayes(party ~ ., data = train_cv)
 
+  cv_nb_pred &lt;- predict(cv_nb_fit, val_cv)
+  
+  cv_nb_acc[i] &lt;- mean(cv_nb_pred == val_cv$party)
+}
+  
 # Accuracy
-mean(cv_nb_pred == val_cv$party)</code></pre>
-<pre><code>## [1] 0.9302326</code></pre>
+mean(cv_nb_acc)</code></pre>
+<pre><code>## [1] 0.9012156</code></pre>
 <pre class="r"><code># Error Rate
-mean(cv_nb_pred != val_cv$party)</code></pre>
-<pre><code>## [1] 0.06976744</code></pre>
+mean(1 - cv_nb_acc)</code></pre>
+<pre><code>## [1] 0.09878436</code></pre>
 </div>
 <div id="k-nearest-neighbors-knn-1" class="section level2">
 <h2>6.4 K-Nearest Neighbors (KNN)</h2>
-<pre class="r"><code>train_X &lt;- model.matrix(party ~ . -1, train_cv)
-val_X   &lt;- model.matrix(party ~ . -1, val_cv)
-train_Y &lt;- train_cv$party
-  
-cv_knn_pred &lt;- knn(train_X, val_X, train_Y, k = 5)
+<pre class="r"><code>for (i in 1:k) {
+  # Split into training and validation sets
+  train_cv &lt;- votes[folds != i, ]
+  val_cv   &lt;- votes[folds == i, ]
 
+  train_X &lt;- model.matrix(party ~ . -1, train_cv)
+  val_X   &lt;- model.matrix(party ~ . -1, val_cv)
+  train_Y &lt;- train_cv$party
+  
+  cv_knn_pred &lt;- knn(train_X, val_X, train_Y, k = 5)
+  
+  cv_knn_acc[i] &lt;- mean(cv_knn_pred == val_cv$party)
+}
+  
 # Accuracy
-mean(cv_knn_pred == val_cv$party)</code></pre>
-<pre><code>## [1] 0.9302326</code></pre>
+mean(cv_knn_acc)</code></pre>
+<pre><code>## [1] 0.9309725</code></pre>
 <pre class="r"><code># Error Rate
-mean(cv_knn_pred != val_cv$party)</code></pre>
-<pre><code>## [1] 0.06976744</code></pre>
+mean(1 - cv_knn_acc)</code></pre>
+<pre><code>## [1] 0.06902748</code></pre>
 </div>
 <div id="model-comparison-1" class="section level2">
 <h2>6.5 Model Comparison</h2>
 <pre class="r"><code>cv_accuracy &lt;- c(
-  Logistic = mean(cv_glm_pred == val_cv$party),
-  LDA      = mean(cv_lda_pred == val_cv$party),
-  QDA      = NA,
-  NaiveBayes = mean(cv_nb_pred == val_cv$party),
-  KNN      = mean(cv_knn_pred == val_cv$party)
+  Logistic = mean(cv_glm_acc),
+  LDA      = mean(cv_lda_acc),
+  NaiveBayes = mean(cv_nb_acc),
+  KNN      = mean(cv_knn_acc),
+  QDA      = NA
 )
 
+
 cv_accuracy</code></pre>
+<pre><code>##   Logistic        LDA NaiveBayes        KNN        QDA 
+##  0.9376850  0.9540169  0.9012156  0.9309725         NA</code></pre>
+<p>Just for a reminder, these were our validation set approach
+scores.</p>
+<pre class="r"><code>traintest_accuracy</code></pre>
 <pre><code>##   Logistic        LDA        QDA NaiveBayes        KNN 
-##  0.9534884  0.9767442         NA  0.9302326  0.9302326</code></pre>
+##  0.9449541  0.9495413         NA  0.9128440  0.9311927</code></pre>
 </div>
 </div>
 <div id="final-model-selection" class="section level1">
@@ -802,29 +865,47 @@ cv_accuracy</code></pre>
 results, Linear Discriminant Analysis (LDA) emerges as the
 best-performing model. LDA achieved the highest validation set accuracy
 at 95.0% and maintained strong performance in cross-validation achieving
-a 97.7%. This outperformed Logistic Regression validation set (94.5%)
-and CV (93.8%). This also beat KNN validation set accuracy (93.0%) and
-CV (93.0%). Quadratic Discriminant Analysis (QDA) could not be fit due
-to rank deficiency issues. Naive Bayes performed the worst on this
-dataset for both validation (91.2%) and CV (93.0%), likely because the
-strong dependencies among voting variables violate the independence
-assumption.</p>
+a 96.1%.</p>
+<p>This outperformed Logistic Regression validation set (94.5%) and CV
+(93.8%).</p>
+<p>This also beat KNN validation set and CV accuracy (both 93.1%).</p>
+<p>Quadratic Discriminant Analysis (QDA) could not be fit due to rank
+deficiency issues.</p>
+<p>Naive Bayes performed the worst on this dataset for both validation
+(91.3%) and CV (93.1%), likely because the strong dependencies among
+voting variables violate the independence assumption.</p>
 <p>Although Logistic Regression and KNN also achieved high validation
 accuracy, LDA combines both excellent predictive performance and
 interpretability, making it the most appropriate choice as the final
 model.</p>
 <div id="confusion-matrix" class="section level2">
 <h2>7.1 Confusion Matrix</h2>
-<pre class="r"><code># Predict on the test set using the CV LDA model
-lda_pred_test &lt;- predict(cv_lda_fit, test)$class
+<pre class="r"><code>all_pred &lt;- c()
+all_actual &lt;- c()
 
-# Create confusion matrix
-conf_matrix &lt;- table(Predicted = lda_pred_test, Actual = test$party)
+for (i in 1:k) {
+  # Split data
+  train_cv &lt;- votes[folds != i, ]
+  val_cv   &lt;- votes[folds == i, ]
+
+  # Fit model
+  cv_lda_fit &lt;- lda(party ~ ., data = train_cv)
+
+  # Predict
+  cv_lda_pred &lt;- predict(cv_lda_fit, val_cv)$class
+  
+  # Store results
+  all_pred &lt;- c(all_pred, as.character(cv_lda_pred))
+  all_actual &lt;- c(all_actual, as.character(val_cv$party))
+}
+
+# Create one confusion matrix across all folds
+conf_matrix &lt;- table(Predicted = all_pred, Actual = all_actual)
 conf_matrix</code></pre>
 <pre><code>##             Actual
 ## Predicted    democrat republican
-##   democrat        126          2
-##   republican        8         82</code></pre>
+##   democrat        252          5
+##   republican       15        163</code></pre>
 </div>
 <div id="other-classification-metrics" class="section level2">
 <h2>7.2 Other Classification Metrics</h2>
@@ -844,6 +925,10 @@ FP_rep &lt;- conf_matrix[&quot;republican&quot;, &quot;democrat&quot;]
 FN_rep &lt;- conf_matrix[&quot;democrat&quot;, &quot;republican&quot;]
 TN_rep &lt;- conf_matrix[&quot;democrat&quot;, &quot;democrat&quot;]
 
+# Accuracy
+accuracy &lt;- sum(diag(conf_matrix)) / sum(conf_matrix)
+error_rate &lt;- 1 - accuracy
+
 # Democrat Metrics
 precision_dem &lt;- TP_dem / (TP_dem + FP_dem)
 recall_dem    &lt;- TP_dem / (TP_dem + FN_dem)
@@ -854,7 +939,7 @@ precision_rep &lt;- TP_rep / (TP_rep + FP_rep)
 recall_rep    &lt;- TP_rep / (TP_rep + FN_rep)
 f1_rep        &lt;- 2 * (precision_rep * recall_rep) / (precision_rep + recall_rep)
 
-# Combine into a data frame for easy viewing
+# Combine results
 metrics &lt;- data.frame(
   Class = c(&quot;Democrat&quot;, &quot;Republican&quot;),
   Precision = c(precision_dem, precision_rep),
@@ -864,8 +949,8 @@ metrics &lt;- data.frame(
 
 metrics</code></pre>
 <pre><code>##        Class Precision    Recall  F1_Score
-## 1   Democrat 0.9843750 0.9402985 0.9618321
-## 2 Republican 0.9111111 0.9761905 0.9425287</code></pre>
+## 1   Democrat 0.9805447 0.9438202 0.9618321
+## 2 Republican 0.9157303 0.9702381 0.9421965</code></pre>
 </div>
 </div>
 <div id="conclusion" class="section level1">
