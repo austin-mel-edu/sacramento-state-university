@@ -1,0 +1,218 @@
+---
+title: "lab-ch7"
+author: "Austin Melendez"
+date: "2026-04-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Section 7.9: Exercises 8, 9, 11
+
+```{r}
+library(ISLR2)
+library(glmnet)
+library(pls)
+library(leaps)
+```
+
+## Exercise 8
+Fit some of the non-linear models investigated in this chapter to the `Auto` data set. Is there evidence for non-linear relationships in this data set?
+
+### A
+```{r}
+library(ISLR2)
+library(splines)
+
+data(Auto)
+
+# Polynomial
+fit_poly <- lm(mpg ~ poly(horsepower, 4), data = Auto)
+
+# Regression spline
+fit_bs <- lm(mpg ~ bs(horsepower, df = 5), data = Auto)
+
+summary(fit_poly)
+summary(fit_bs)
+```
+
+```{r}
+hp_grid <- seq(min(Auto$horsepower), max(Auto$horsepower), length = 100)
+
+pred_poly <- predict(fit_poly, newdata = list(horsepower = hp_grid))
+pred_bs <- predict(fit_bs, newdata = list(horsepower = hp_grid))
+
+plot(Auto$horsepower, Auto$mpg, col = "grey",
+     xlab = "Horsepower", ylab = "MPG")
+
+lines(hp_grid, pred_poly, col = "blue", lwd = 2)
+lines(hp_grid, pred_bs, col = "red", lwd = 2)
+
+legend("topright", legend = c("Polynomial", "Spline"),
+       col = c("blue","red"), lwd = 2)
+```
+
+* Strong evidence of non-linearity.
+* `MPG` declines rapidly at low horsepower, then levels off.
+* Splines capture this pattern more smoothly than polynomials.
+
+## Exercise 9
+From the `Boston` data, we will treat `dis` as the predictor and `nox` as the response.
+
+### A
+Use the poly() function to fit a cubic polynomial regression to predict `nox` using `dis`.
+```{r}
+data(Boston)
+
+fit3 <- lm(nox ~ poly(dis, 3), data = Boston)
+summary(fit3)
+
+dis_grid <- seq(min(Boston$dis), max(Boston$dis), length = 100)
+pred3 <- predict(fit3, newdata = list(dis = dis_grid))
+
+plot(Boston$dis, Boston$nox, col = "grey")
+lines(dis_grid, pred3, col = "blue", lwd = 2)
+```
+
+### B
+Plot the polynomial fits for a range of different polynomial degrees (from 1 to 10).
+```{r}
+rss <- rep(NA, 10)
+
+for (i in 1:10) {
+  fit <- lm(nox ~ poly(dis, i), data = Boston)
+  rss[i] <- sum(residuals(fit)^2)
+}
+
+plot(1:10, rss, type = "b", xlab = "Degree", ylab = "RSS")
+
+print(mean(rss))
+```
+
+### C
+Perform cross-validation or another approach to select the optimal degree for the polynomial.
+```{r}
+library(boot)
+
+cv_error <- rep(NA, 10)
+
+for (i in 1:10) {
+  fit <- glm(nox ~ poly(dis, i), data = Boston)
+  cv_error[i] <- cv.glm(Boston, fit, K = 10)$delta[1]
+}
+
+plot(1:10, cv_error, type = "b",
+     xlab = "Degree", ylab = "CV Error")
+```
+I would select degree 3 or 4 since it has the lowest CV error rate.
+
+### D
+Use the bs() function to fit a regression spline to predict `nox` using `dis`. Report the output for the fit using four degrees of freedom.
+```{r}
+fit_bs <- lm(nox ~ bs(dis, df = 4), data = Boston)
+summary(fit_bs)
+
+pred_bs <- predict(fit_bs, newdata = list(dis = dis_grid))
+
+plot(Boston$dis, Boston$nox, col = "grey")
+lines(dis_grid, pred_bs, col = "red", lwd = 2)
+```
+
+### E
+Now fit a regression spline for a range of degrees of freedom, and plot the resulting fits and report the resulting RSS.
+```{r}
+rss_spline <- rep(NA, 10)
+
+for (i in 3:10) {
+  fit <- lm(nox ~ bs(dis, df = i), data = Boston)
+  rss_spline[i] <- sum(residuals(fit)^2)
+}
+
+plot(3:10, rss_spline[3:10], type = "b",
+     xlab = "DF", ylab = "RSS")
+```
+RSS is lowest when degrees of freedom is equal to 10. More generally, RSS decreases with df.
+
+### F
+Perform cross-validation or another approach in order to select the best degrees of freedom for a regression spline on this data.
+```{r}
+cv_spline <- rep(NA, 10)
+
+for (i in 3:10) {
+  fit <- glm(nox ~ bs(dis, df = i), data = Boston)
+  cv_spline[i] <- cv.glm(Boston, fit, K = 10)$delta[1]
+}
+
+plot(3:10, cv_spline[3:10], type = "b",
+     xlab = "DF", ylab = "CV Error")
+```
+However, using CV we see that the optimal df is actually moderate (about 7). This confirms bias-variance tradeoff.
+
+## Exercise 11
+In Section 7.7, it was mentioned that GAMs are generally fit using a backfitting approach. We will now explore backfitting in the context of multiple linear regression.
+
+### A
+Generate a response $Y$ and two predictors $X_1$ and $X_2$, with $n = 100$.
+```{r}
+set.seed(1)
+n <- 100
+
+x1 <- rnorm(n)
+x2 <- rnorm(n)
+y <- 3 + 2*x1 + 4*x2 + rnorm(n)
+```
+
+### B-E
+Backfitting loop.
+```{r}
+beta1 <- 100
+beta2 <- -100
+
+beta0_vals <- beta1_vals <- beta2_vals <- rep(NA, 1000)
+
+for (i in 1:1000) {
+
+  # update beta2
+  a <- y - beta1 * x1
+  beta2 <- lm(a ~ x2)$coef[2]
+
+  # update beta1
+  a <- y - beta2 * x2
+  beta1 <- lm(a ~ x1)$coef[2]
+
+  # update beta0
+  beta0 <- mean(y - beta1*x1 - beta2*x2)
+
+  beta0_vals[i] <- beta0
+  beta1_vals[i] <- beta1
+  beta2_vals[i] <- beta2
+}
+
+plot(beta1_vals, type = "l", col = "blue",
+     ylim = range(c(beta0_vals, beta1_vals, beta2_vals)),
+     ylab = "Coefficient Value",
+     xlab = "Iteration")
+lines(beta2_vals, col = "red")
+lines(beta0_vals, col = "green")
+
+legend("topright", legend = c("beta1","beta2","beta0"),
+       col = c("blue","red","green"), lwd = 2)
+
+```
+This plot looks wrong... unless the coefficient values are being converged too very rapidly? 
+
+### F
+Compare your answer in (e) to the results of simply performing multiple linear regression to predict $Y$ using $X_1$ and $X_2$.
+```{r}
+fit <- lm(y ~ x1 + x2)
+
+
+```
+
+### G
+On this data set, how many backfitting iterations were required in order to obtain a “good” approximation to the multiple regression coefficient estimates?
+
+* Converges quickly, almost instantly
+* Final estimates approx equal multiple regression estimates
