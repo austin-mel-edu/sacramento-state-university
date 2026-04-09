@@ -1,0 +1,259 @@
+---
+title: "lab-ch8"
+author: "Austin Melendez"
+date: "2026-04-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Section 8.4: Exercises 8, 9
+
+## Exercise 8
+In the lab, a classification tree was applied to the `Carseats` data set after converting `Sales` into a qualitative response variable. Now we will seek to predict `Sales` using regression trees and related approaches, treating the response as a quantitative variable.
+
+```{r}
+#install.packages("ISLR2")
+#install.packages("tree")
+#install.packages("randomForest")
+#install.packages("BART")
+
+library(ISLR2)
+library(tree)
+
+set.seed(1)
+
+data(Carseats)
+```
+
+### A
+Split into training and test set.
+```{r}
+train <- sample(1:nrow(Carseats), nrow(Carseats)/2)
+Carseats_train <- Carseats[train, ]
+Carseats_test  <- Carseats[-train, ]
+```
+
+### B
+Fit a regression tree to the training set. Plot the tree and interpret the results.
+```{r}
+tree_fit <- tree(Sales ~ ., data = Carseats_train)
+
+# Plot tree
+plot(tree_fit)
+text(tree_fit, pretty = 0)
+
+tree_pred <- predict(tree_fit, newdata = Carseats_test)
+
+# Test MSE
+mean((tree_pred - Carseats_test$Sales)^2)
+```
+
+### C
+Use cross-validation to determine the optimal level of tree complexity. Does pruning the tree improve the test MSE?
+```{r}
+set.seed(1)
+
+cv_tree <- cv.tree(tree_fit)
+
+# Plot CV results
+plot(cv_tree$size, cv_tree$dev, type = "b",
+     xlab = "Tree Size", ylab = "Deviance")
+
+# Find best size using CV
+best_size <- cv_tree$size[which.min(cv_tree$dev)]
+
+# Prune tree
+pruned_tree <- prune.tree(tree_fit, best = best_size)
+
+# Plot pruned tree
+plot(pruned_tree)
+text(pruned_tree, pretty = 0)
+
+# Test MSE
+pruned_pred <- predict(pruned_tree, newdata = Carseats_test)
+mean((pruned_pred - Carseats_test$Sales)^2)
+```
+
+### D
+Use the bagging approach. What test MSE do you obtain? Use `importance()` to determine which variables are most important.
+```{r}
+library(randomForest)
+
+set.seed(1)
+
+bag_fit <- randomForest(Sales ~ ., data = Carseats_train,
+                        mtry = ncol(Carseats_train) - 1,
+                        importance = TRUE)
+
+# Predictions
+bag_pred <- predict(bag_fit, newdata = Carseats_test)
+
+# Test MSE
+mean((bag_pred - Carseats_test$Sales)^2)
+
+# Variable importance
+importance(bag_fit)
+varImpPlot(bag_fit)
+```
+
+### E
+Use random forests. What test MSE do you obtain? Use `importance()` to determine which variables are most important. Describe the effect of $m$, the number of variables onsidered at each split, and the error rate obtained.
+```{r}
+set.seed(1)
+
+rf_fit <- randomForest(Sales ~ ., data = Carseats_train,
+                       mtry = floor(sqrt(ncol(Carseats_train) - 1)),
+                       importance = TRUE)
+
+# Predictions
+rf_pred <- predict(rf_fit, newdata = Carseats_test)
+
+# Test MSE
+mean((rf_pred - Carseats_test$Sales)^2)
+
+# Importance
+importance(rf_fit)
+varImpPlot(rf_fit)
+```
+
+### F
+Analyze the data using BART.
+```{r}
+library(BART)
+
+set.seed(1)
+
+# Prepare matrices
+x_train <- model.matrix(Sales ~ . - 1, data = Carseats_train)
+y_train <- Carseats_train$Sales
+x_test  <- model.matrix(Sales ~ . - 1, data = Carseats_test)
+
+# Fit BART
+bart_fit <- gbart(x_train, y_train, x_test)
+
+# Predictions
+bart_pred <- bart_fit$yhat.test.mean
+
+# Test MSE
+mean((bart_pred - Carseats_test$Sales)^2)
+```
+
+
+## Exercise 9
+This problem invovles the `OJ` data set which is part of the `ISLR2` package.
+```{r}
+library(ISLR2)
+library(tree)
+
+set.seed(1)
+
+data(OJ)
+```
+
+
+### A
+Create a training set containing a random sample of 800 observations, and a test set containing the remaining observations.
+```{r}
+train <- sample(1:nrow(OJ), 800)
+OJ_train <- OJ[train, ]
+OJ_test  <- OJ[-train, ]
+```
+
+### B
+Fit a tree to the training data, with `Purchase` as the response and all others as predictors. What is the training error rate? How many terminal nodes does the tree have?
+```{r}
+oj_tree <- tree(Purchase ~ ., data = OJ_train)
+
+summary(oj_tree)
+```
+
+### C
+Pick one of the terminal nodes and interpret the information displayed after typing in the name of a tree object to get a detailed text output.
+```{r}
+oj_tree
+```
+To select a terminal node, we look for nodes that have a *, this idicates that it is a terminal node.
+
+Node 7 corresponds to the observations where `LoyalCH` $> 0.764572$. This node contains $261$ observations and the predicted class for this node is `CH`.
+
+It also shows us that about 95.8% of the observations purchased `CH` and 4.2% purchased `MM`.
+
+This means that customers with a high value of `LoyalCH` are very liekly to purchase `CH`.
+
+### D
+Create a plot of the tree.
+```{r}
+plot(oj_tree)
+text(oj_tree, pretty = 0)
+```
+
+### E
+Predict the response on the test data, and produce a confusion matrix comparing the test labels and predicted test labels. What is the test error rate?
+```{r}
+oj_pred <- predict(oj_tree, newdata = OJ_test, type = "class")
+
+table(oj_pred, OJ_test$Purchase)
+
+# Test error rate
+mean(oj_pred != OJ_test$Purchase)
+```
+
+### F
+Apply the `cv.tree()` function to the training set in order to determine the optimal tree size.
+```{r}
+set.seed(1)
+
+cv_oj <- cv.tree(oj_tree, FUN = prune.tree)
+```
+
+### G
+Produce a plot with tree size on the x-axis and cross-validated classification error rate on the y-axis.
+```{r}
+plot(cv_oj$size, cv_oj$dev, type = "b",
+     xlab = "Tree Size", ylab = "CV Error")
+```
+
+### H
+Which tree size corresponds to the lowest cross-validated classification error rate?
+```{r}
+best_size <- cv_oj$size[which.min(cv_oj$dev)]
+best_size
+```
+
+### I
+Produce a pruned tree corresponding to the optimal tree size obtained using CV.
+```{r}
+pruned_oj <- prune.tree(oj_tree, best = best_size)
+
+plot(pruned_oj)
+text(pruned_oj, pretty = 0)
+```
+
+### J
+Compare the training error rates between the pruned and unpruned trees. Which is higher?
+```{r}
+# Unpruned
+train_pred_unpruned <- predict(oj_tree, type = "class")
+mean(train_pred_unpruned != OJ_train$Purchase)
+
+# Pruned
+train_pred_pruned <- predict(pruned_oj, type = "class")
+mean(train_pred_pruned != OJ_train$Purchase)
+```
+The pruned tree's training error is higher than the unpruned tree.
+
+### K
+Compare the test error rates between the pruned and unpruned trees. Which is higher?
+```{r}
+# Unpruned
+test_pred_unpruned <- predict(oj_tree, newdata = OJ_test, type = "class")
+mean(test_pred_unpruned != OJ_test$Purchase)
+
+# Pruned
+test_pred_pruned <- predict(pruned_oj, newdata = OJ_test, type = "class")
+mean(test_pred_pruned != OJ_test$Purchase)
+```
+The pruned tree's test error rate is very slightly higher than the unpruned tree.
