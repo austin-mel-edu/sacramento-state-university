@@ -1,0 +1,71 @@
+---
+title: "hw1"
+author: "Austin Melendez"
+date: "2026-02-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1
+For each part, indicate wheather we would generally expect the performance of a flexible statistical learning method to be better or worse than an inflexible method.
+
+### 1A
+With lots of observations and only a few predictors, a flexibile method can model complex structures and interactions without overfitting. A large `n` reduces variance and allows flexible estimators, which will outperform simple inflexible models.
+
+### 1B
+With many predictors and few observations, flexible methods have a potential to overfit values badly because of the high variance. Inflexible methods like linear regression would likely be a better fit than an over complicated model.
+
+### 1C
+If the true relationship is non-linear, then flexible methods capture the complexity significantly better than inflexible models.
+
+### 1D
+If the variance of the error terms is extermely high it can break one of our base assumptions. Variance is inflated in flexible methods while inflexible methods are more robust to noisy data.
+
+## 2
+Identify if the scenario is a classification or regression problem, indicate whether we are more interested in inference or prediction. Finally, provide $n$ and $p$.
+
+### 2A
+CEO salary is quantitative, so that would mean it is a regression problem. We would be interested inference because we want to understand the factors that affect CEO salary. Our $n$ is 500 since our data is collected from 500 firms and our $p$ is 3 which are `profit`, `employees`, `industry`, `CEO salary`.
+
+### 2B
+Since success and failure is categorical, this is a classification problem. Our goal would be prediction because we want to know whether a new product will succeed. Our $n$ is the 20 previous products and our $p$ is 13 which are `success/failure`, `price`, `budget`, `competition price`, and ten other variables.
+
+### 2C
+Since % change is quantitative, this would be a regression problem. Our goal would be prediction since we want to forcast future exchange-rate changes. Our $n$ is 52 since we tracked weekly data for the entirety of 2012 and $p$ is 4 which are `% change in USD/Euro`, `% change in US market`, `% change in British market`, `% change in the German market`.
+
+## 4
+Create some real world applications for statistical learning and methods.
+
+### 4A
+Create 3 classification problems:
+- Email Spam Detection using `email text`, `sender`, `cc`, `formatting`, `link` as predictors with the goal of classifying new emails correctly as `spam` or `not spam`.
+- Medical Diagnosis using `symptoms`, `lab tests`, `imaging`, `age`, `blood pressure`, `medical history` as predictors with the goal of predicting an accurate diagnosis for new patients.
+- Bank Loan Default Risk using `credit score`, `income`, `debt`, `payment history`, `loan amount` as predictors with the goal of predicting if an applicant are liekly to default on their loan.
+
+### 4B
+Create 3 regression problems:
+- Housing Price Prediction using `sqft`, `bedrooms`, `bathrooms`, `lot size`, `neighborhood score`, `built`, `remodeled` with the goal of predicting the price of future home listings.
+- Forecasting Weather Temperature using `current temp`, `humidity`, `wind speed`, `atmospheric pressure` with the goal of predicting tomorrows temperature.
+- Estimating Stock Prices using `open price`, `close price`, `high price`, `low price`, `volume` with the goal of predicting a stock price's change for tomorrow.
+
+### 4C
+Create 3 cluster analysis problems:
+- Customer Behavior Analysis would be able to group customers by their purchasing habits and behaviors.
+- Image Compression would use cluster analysis to cluster simliar colors, using something like a k-means analysis, to reduce image file size.
+- Social Media News Sentiments would use cluster analystic to cluster simliar keywords and messaging that are frequently used to describe a certain topic.
+
+## 5
+There are multiple advantages to using flexible statistical modeling methods such as the ability to capture complex, non-linear relationships. Flexbile methods usuaslly maintain a low bias and often have higher predictive accuracy when `n` is large and variance is low. Some disadvantages are that flexible methods are harder to interpret and require more data and computation to create a strong model. Data with high variance means flexible methods are easily prone to overfitting. 
+
+Inflexible methods also have some advantages such as behind easily interpretable and performing well with small $n$ or data with high variance. However, inflexible models can create a model with high bias and are unable to capture non-linear patterns.
+
+We prefer to use flexible methods with a large $n$, low noise, and when we know there is a complex relationship between variables. We use inflexible methods when we have a small $n$, high noise, and we want a simple model that is easily interpretable.
+
+## 6
+For a parametric statistical learning approach we assume a functional form such as linear regression. We first choose the model form, then estimate the parameters of the model. Some advantages are the simplicity and quickness of this approach. It has a low data requirement, easy interpretation, and has less of a risk of overfitting. However, if the model form is wrong it can create high bias. Additionally, we are unable to capture a complex structure using this approach.
+
+Non-parametric approaches we have no explicit functional form. This is an advantage because the approach is much more flexible and can fit complex relationships. However, non-parametric approaches can have high variance, require a large $n$, and can be hard to interpret.
+

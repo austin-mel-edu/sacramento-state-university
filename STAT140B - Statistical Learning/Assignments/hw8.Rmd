@@ -1,0 +1,93 @@
+---
+title: "hw8"
+author: "Austin Melendez"
+date: "2026-04-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Section 8.4: Exercises 1, 4, 5
+
+```{r}
+#install.packages("ISLR2")
+#install.package("tree")
+
+library(ISLR2)
+library(tree)
+```
+
+## Exercise 1
+Draw an example of a partition of two-dimensional feature space that could result from recursive binary splitting. Your example should contain at least six regions. Draw a decision tree corresponding to this partition. Be sure to label all aspects of your figures, including regions $R_1$, $R_2$, ..., the cut points $t_1$, $t_2$, ..., and so forth.
+
+I used Google and AI to help me create the below visualization in R after sketching it in my notebook.
+```{r}
+plot(0:10, 0:10, type="n", xlab="X1", ylab="X2", main="Partitioned Space")
+
+# Splits
+abline(v=5, lwd=2)       # t1
+segments(-1,5,5,5,lwd=2) # t2
+segments(5,8,11,8,lwd=2) # t3
+segments(5,3,11,3,lwd=2) # t4
+segments(7,-1,7,3,lwd=2) # t5
+
+# Labels
+text(2,8,"R1")
+text(2,3,"R2")
+text(6,1,"R3")
+text(8.5,1,"R4")
+text(8,5,"R5")
+text(8,9,"R6")
+```
+
+## Exercise 4
+![Textbook Figure 8.14](https://i.imgur.com/bV1JA0k.png)
+
+### A
+Sketch the tree corresponding to the partition of the predictor space illustrated in the left-hand panel of `Figure 8.14`. The numbers inside the boxes indicate the mean of $Y$ within each region.
+
+I tried to use Google and AI to help me create the below visualization in R after sketching it in my notebook, but it was just easier to attach a picture of my drawing.
+
+![Figure 8.14 Exercise 4A](https://i.imgur.com/ZfO8yBx.jpeg)
+
+### B
+Create a diagram similar to the left-hand panel of `Figure 8.14`, using the tree illustrated in the right-hand panel of the same figure. You should divide up the predictor space into the correct regions and indicate the mean for each region.
+
+I tried to use Google and AI to help me create the below visualization in R after sketching it in my notebook, but it was just easier to attach a picture of my drawing.
+
+![Figure 8.14 Exercise 4B](https://i.imgur.com/dfIHfJV.jpeg)
+
+## Exercise 5
+Suppose we produce ten bootstrapped samples from a data set containing red and green classes. We then apply a classification tree to each bootstrapped sample and, for a specific value of $X$, produce 10 estimates of $P(Red | X)$:
+
+$$0.1, 0.15, 0.2, 0.2, 0.55, 0.6, 0.6, 0.65, 0.7, and \space 0.75$$
+
+There are two common ways to combine these results together into a
+single class prediction. One is the majority vote approach discussed in
+this chapter. The second approach is to classify based on the average
+probability. In this example, what is the final classification under each
+of these two approaches?
+
+### A) 
+Majority Vote
+We can classify:
+$$Red \space if \space P > 0.5$$
+$$Green \space if  \space P \leq 0.5$$
+
+Therefore: 
+$$Green: 0.1, 0.15, 0.2, 0.2 \space (4 \space results)$$
+$$Red: 0.55, 0.6, 0.6, 0.65, 0.7, 0.75 \space (6 \space results)$$
+
+Since $Red$ has more results, Majority Vote says we should classify this as $Red$.
+
+### B) 
+Average Probability
+
+```{r}
+probs <- c(0.1,0.15,0.2,0.2,0.55,0.6,0.6,0.65,0.7,0.75)
+mean(probs)
+```
+
+Since our mean $\approx 0.45$, average probability says we should classify this as $Green$.

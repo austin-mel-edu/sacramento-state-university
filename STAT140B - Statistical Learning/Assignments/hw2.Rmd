@@ -1,0 +1,83 @@
+---
+title: "hw2"
+author: "Austin Melendez"
+date: "2026-02-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1
+```{r}
+# Linear value
+eta <- 1.2
+
+# Logistic function (Equation 4.2)
+p1 <- exp(eta) / (1 + exp(eta))
+
+# Logit form (Equation 4.3)
+p2 <- exp(eta) / (1 + exp(eta))
+
+# Equal?
+p1 == p2
+
+p1
+p2
+```
+## 6
+Given:
+$$ \beta_0 = -6 $$
+$$ \beta_1 = 0.05 $$
+$$ \beta_2 = 1 $$
+
+Model:
+
+$$ p = \frac{\exp(\eta)}{1 + \exp(\eta)} $$
+### A
+Probability of A for 40 hours studied, GPA = 3.5
+```{r}
+beta0 <- -6
+beta1 <- 0.05
+beta2 <- 1
+
+X1 <- 40      # hours studied
+X2 <- 3.5     # GPA
+
+eta <- beta0 + beta1 * X1 + beta2 * X2
+p <- exp(eta) / (1 + exp(eta))
+p
+```
+
+### B
+How many study hours give a 50% chance?
+```{r}
+beta0 <- -6
+beta1 <- 0.05
+beta2 <- 1
+
+gpa <- 3.5
+
+hours <- -(beta0 + beta2 * gpa) / beta1
+hours
+```
+
+## 9
+Convert odds to probability and probability to odds
+
+### A
+f
+```{r}
+odds <- 0.37
+p <- odds / (1 + odds)
+p
+```
+
+### B
+```{r}
+p <- 0.16
+odds <- p / (1 - p)
+odds
+```
+
