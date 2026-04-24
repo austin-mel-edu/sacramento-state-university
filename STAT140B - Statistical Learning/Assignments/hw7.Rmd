@@ -1,0 +1,141 @@
+---
+title: "hw-ch7"
+author: "Austin Melendez"
+date: "2026-04-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Section 7.9: Exercises 3, 4, 5
+
+```{r}
+library(ISLR2)
+```
+
+## Exercise 3
+
+We are given:
+$b_1(X) = X$
+$b_2(X) = (X-1)^2 I(X\ge1)$
+
+$\hat{\beta}_0 = 1$
+$\hat{\beta}_1 = 1$
+$\hat{\beta}_2 = -2$
+
+Estimate curve between $X = -2$ and $X = 2$.
+
+Our Model:
+$\hat{Y} = 1+[1\times X]-[2\times (X-1)^2 I(X\ge1)] + \epsilon$
+
+Case 1 $X < 1$:
+$$ \hat{Y} = 1 + X $$
+
+Case 2 $X \ge 1$:
+$$ \hat{Y} = 1 + X - 2(X-1)^2 $$
+Image summary:
+* From **−2** to **1** linear line increasing
+* Smooth transition at **1**
+* After **1** Concave-down parabola
+
+```{r}
+x <- seq(-2, 2, length = 200)
+
+y <- ifelse(x < 1,
+            1 + x,
+            1 + x - 2*(x - 1)^2)
+
+plot(x, y, type = "l", lwd = 2,
+     xlab = "X", ylab = "Y")
+abline(v = 1, lty = 2)
+```
+
+## Exercise 4
+
+We are given:
+$b_1(X) = I(0\le X\le 2)-(X-1) I(1\le X\le 2)$
+$b_2(X) = (X-3) I(3\le X\le 4)+I(4<X<5)$
+
+$\hat{\beta}_0 = 1$
+$\hat{\beta}_1 = 1$
+$\hat{\beta}_2 = 3$
+
+Estimate curve between $X = -2$ and $X = 6$.
+
+Model:
+$\hat{Y} = 1+[1\times I(0\le X\le 2)-(X-1) I(1\le X\le 2)]+[3\times (X-3) I(3\le X\le 4)+I(4<X<5)] + \epsilon$
+
+Case 1 $X < 0$:
+$$ \hat{Y} = 1$$
+
+Case 2 $0 \le X < 1$:
+$$ \hat{Y} = 2 $$
+
+Case 3 $1 \le X < 2$:
+$$ \hat{Y} = 3 - X $$
+
+Case 4 $2 < X < 3$:
+$$ \hat{Y} = 1 $$
+
+Case 5 $3 \le X \le 4$:
+$$ \hat{Y} = 3X - 8 $$
+
+Case 6 $4 < X \le 5$:
+$$ \hat{Y} = 4 $$
+
+Case 7 $X > 5$:
+$$ \hat{Y} = 1 $$
+
+Image summary:
+* Flat at **1** (left tail)
+* Jump to **2** on [0,1)
+* Decreasing line to **1** on [1,2]
+* Flat again at **1**
+* Sharp increase on [3,4]
+* Flat at **4** on (4,5]
+* Drop back to **1**
+
+```{r}
+x <- seq(-2, 6, length = 400)
+
+y <- ifelse(x < 0, 1,
+     ifelse(x < 1, 2,
+     ifelse(x <= 2, 3 - x,
+     ifelse(x < 3, 1,
+     ifelse(x <= 4, 3*x - 8,
+     ifelse(x <= 5, 4, 1))))))
+
+plot(x, y, type = "l", lwd = 2,
+     xlab = "X", ylab = "Y")
+
+abline(v = c(0,1,2,3,4,5), lty = 3)
+```
+
+## Exercise 5
+Consider two curves, $\hat{g}_1$ and $\hat{g}_2$, defined by:
+
+$$ \hat{g}_1 = arg\space min(\sum^{n}_{i=1}(y_i - g(x_i))^2 + \lambda \int[g^{(3)}(x)]^2 \space dx)$$
+
+$$ \hat{g}_2 = arg\space min(\sum^{n}_{i=1}(y_i - g(x_i))^2 + \lambda \int[g^{(4)}(x)]^2 \space dx)$$
+
+where $g^{(m)}$ represents the mth derivative of g.
+
+#### A 
+As $\lambda \to \infty$, will $\hat{g}_1$ or $\hat{g}_2$ have the smaller training RSS?
+
+$\hat{g}_1$ penalizes 3rd derivative → quadratic (degree 2)
+$\hat{g}_2$ penalizes 4th derivative → cubic (degree 3)
+
+Cubic is more flexible and fits training data better. So $\hat{g}_2$ has smaller training RSS. 
+
+#### B 
+As $\lambda \to \infty$, will $\hat{g}_1$ or $\hat{g}_2$ have the smaller test RSS?
+
+Cubic has lower bias than quadratic and typically generalizes better. So $\hat{g}_2$ has smaller test RSS. 
+
+#### C
+For $\lambda = 0$, will $\hat{g}_1$ or $\hat{g}_2$ have the smaller training and test RSS?
+
+Training RSS = 0 for both meaning they both overfit, which results in high test RSS

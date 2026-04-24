@@ -1,0 +1,393 @@
+---
+title: "Modeling Reference Sheet"
+author: "Austin Melendez"
+date: "2026-03-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+#install.packages("MASS")
+#install.packages("e1071")
+#install.packages("ISLR2")
+#install.packages("class")
+#install.packages("boot")
+#install.packages("leaps")
+#install.packages("glmnet")
+#install.packages("pls")
+```
+
+
+# STAT140B - Statistical Modeling
+## Modeling Reference Cheat Sheet
+### Austin Melendez
+#### 3/5/2026
+
+```{r}
+# Load required libraries
+library(MASS)   # Boston dataset, lda, qda
+library(ISLR2)  # Default dataset
+library(e1071)  # Naive Bayes
+library(class)  # KNN
+library(boot)   # CV and Bootstrap
+library(leaps)  # Subset selection
+library(glmnet) # Ridge and Lasso
+library(pls)    # PCR and PLS
+```
+
+
+# Chapter 2 - Simple Linear Regression
+* Predict quantitative Y using one predictor
+
+```{r}
+# Using Boston dataset: medv (Value) ~ lstat (Lower Status %)
+fit <- lm(medv ~ lstat, data = Boston)
+
+# Summary
+summary(fit)
+
+# Confidence intervals for coefficients
+confint(fit)
+
+# Predictions for a specific lstat value (e.g., 5%)
+predict(fit, newdata = data.frame(lstat = 5), interval = "confidence")
+predict(fit, newdata = data.frame(lstat = 5), interval = "prediction")
+```
+
+# Chapter 3 - Multiple Linear Regression
+* Predict quantitative outputs using many predictors
+* Check variable importance
+* Can evaluate interactions and nonlinear terms
+```{r}
+# Predict medv using lstat, age, and rm (average rooms)
+fit <- lm(medv ~ lstat + age + rm, data = Boston)
+summary(fit)
+
+# Interaction between lstat and age
+fit.int <- lm(medv ~ lstat * age, data = Boston)
+
+# Polynomial regression (degree 3)
+fit.poly <- lm(medv ~ poly(lstat, 3), data = Boston)
+
+# Diagnostics
+par(mfrow = c(2, 2))
+plot(fit)
+```
+
+# Chapter 4 - Classification Methods
+```{r}
+# Prepare data
+data(Default)
+set.seed(1)
+train_idx <- sample(1:nrow(Default), 0.7 * nrow(Default))
+train_data <- Default[train_idx, ]
+test_data  <- Default[-train_idx, ]
+```
+
+### Logistic Regression
+* Binary classifications
+* Produces probabilities of landing in a class
+* Interpretabble coefficients (log odds)
+```{r}
+log.fit <- glm(default ~ balance + income, data = train_data, family = binomial)
+summary(log.fit)
+
+probs <- predict(log.fit, test_data, type = "response")
+preds <- ifelse(probs > 0.5, "Yes", "No")
+
+# Accuracy
+mean(preds == test_data$default)
+```
+
+### Linear Discriminant Analysis (LDA)
+* Classification when classes are well seperated
+* Assumes predicators are normally dist
+* Works better than logistic regression when $n$ is small
+* Works when deicision boundaries are linear
+```{r}
+lda.fit <- lda(default ~ balance + income, data = train_data)
+lda.pred <- predict(lda.fit, test_data)$class
+
+mean(lda.pred == test_data$default)
+```
+
+### Quadratic Discriminant Analysis (QDA)
+* Like LDA but allows each class its own covariance
+* Flexible, works when decision boundaries are nonlinear
+```{r}
+qda.fit <- qda(default ~ balance + income, data = train_data)
+qda.pred <- predict(qda.fit, test_data)$class
+
+mean(qda.pred == test_data$default)
+```
+
+### Naive Bayes
+* Classifier assuming independece of predictors
+* Works well with many predictors
+* Good for text data
+```{r}
+nb.fit <- naiveBayes(default ~ balance + income, data = train_data)
+nb.pred <- predict(nb.fit, test_data)
+
+mean(nb.pred == test_data$default)
+```
+
+### K-Nearest Neighbors (KNN)
+* Nonparametric classification
+* Good when decision boundary is irregular
+* Must scale/normalize data!
+```{r}
+# Scale numeric predictors for KNN
+train.X <- scale(train_data[, c("balance", "income")])
+test.X  <- scale(test_data[, c("balance", "income")])
+train.Y <- train_data$default
+
+knn.pred <- knn(train.X, test.X, train.Y, k = 5)
+
+mean(knn.pred == test_data$default)
+```
+
+# Chapter 5 - Resampling Methods
+### Validation Set Approach
+* Split into train and test set
+* Only trains on 50-70% of data (high variance)
+* The model is trained on the training set and evaluated on the validation set.
+```{r}
+set.seed(1)
+train.idx <- sample(1:nrow(Boston), nrow(Boston)/2)
+train <- Boston[train.idx, ]
+test  <- Boston[-train.idx, ]
+
+fit <- lm(medv ~ ., data = train)
+pred <- predict(fit, newdata = test)
+mean((test$medv - pred)^2) # Test MSE
+```
+
+### Leave-One-Out Cross Validation (LOOCV)
+* A special case of k-fold cross-validation where $k = n$
+* Each observation is left out one at a time. Train model on $n−1$ observations, then test on the one left out observation. Average the prediction errors
+* Use with small data sets, low bias and possible high variance
+```{r}
+# cv.glm works with glm objects
+fit.glm <- glm(medv ~ lstat + age, data = Boston)
+loocv.err <- cv.glm(Boston, fit.glm)
+
+loocv.err$delta[1] # Raw CV error
+```
+
+### k-Fold Cross Validation
+* The data is divided into $k$ equal-sized folds
+* Split data into $k$ groups and train model on $k-1$ folds. Test on remaining folds and repeat until each fold has been used as the validation set. Then average the errors.
+* Typical $k = 5$ or $k = 10$
+* Use with moderate data sets, good balance between bias and variance
+```{r}
+set.seed(1)
+cv.err <- cv.glm(Boston, fit.glm, K = 10)
+cv.err$delta[1]
+```
+
+### Bootstrap
+* Bootstrap repeatedly samples observations with replacement from the dataset to create many simulated datasets called bootstrap samples
+* Sample n observations with replacement, then fit model and compute statistic of interest (mean, median, CI, errors, bias, etc). Repeat process many times.
+```{r}
+boot.fn <- function(data, index) {
+  coef(lm(medv ~ lstat + age, data = data, subset = index))
+}
+
+boot(Boston, boot.fn, R = 1000)
+```
+
+# Chapter 6 - Model Selection and Regularization
+## Select Subset of Predictors Methods
+### Best Subset Selection
+* Best subset selection fits all possible models using every combination of predictors and selects the best model for each model size
+* Use when the number of predictors p is small
+* Uses Cp, BIC, adj-$R^2$
+```{r}
+# Using Boston data to predict medv
+regfit <- regsubsets(medv ~ ., data = Boston, nvmax = 13)
+reg.summary <- summary(regfit)
+
+par(mfrow = c(1, 3))
+plot(reg.summary$bic, type = "l", main = "BIC")
+plot(reg.summary$cp, type = "l", main = "Cp")
+plot(reg.summary$adjr2, type = "l", main = "Adj R2")
+
+# Identify the best model according to BIC
+which.min(reg.summary$bic)
+```
+
+### Forward / Backward Stepwise Selection
+* Forward selection starts with no predictors and adds predictors one at a time
+* Use forward selection when p is moderately large and works even when $p > n$
+* Backward selection starts with the full model containing all predictors and removes the least useful predictor at each step
+* Use backward selection when p is moderate and works only when $n > p$
+* Both may miss the optimal model, depends on the order variables are added
+```{r}
+reg.fwd <- regsubsets(medv ~ ., data = Boston, nvmax = 13, method="forward")
+
+reg.bwd <- regsubsets(medv ~ ., data = Boston, nvmax = 13, method="backward")
+```
+
+## Shrink Coefficient Methods
+### Ridge Regression
+* Ridge regression modifies least squares by adding a penalty on the squared size of coefficients
+* Use with many predictors and possible multicollinearity
+* You want coefficients to shrink towards zero but not be removed
+* Use when many predictors exist and they are highly correlated. We can reduce variance without removing predictors
+* Reduces overfitting and handles multicollinearity well
+```{r}
+# Prepare matrix input
+X <- model.matrix(medv ~ ., data = Boston)[, -1]
+y <- Boston$medv
+
+# Ridge (alpha = 0)
+cv.ridge <- cv.glmnet(X, y, alpha = 0)
+plot(cv.ridge)
+
+# Coefficients for best Lasso model
+best.lambda <- cv.ridge$lambda.min
+predict(cv.ridge, s = best.lambda, type = "coefficients")
+```
+
+### Lasso
+* Lasso adds a penalty based on the absolute value of coefficients, this penalty can shrink some coefficients exactly to zero
+* Use when you believe only a subset of predictors are important
+* Can behave unpredictably when predictors are highly correlated
+```{r}
+# Lasso (alpha = 1)
+cv.lasso <- cv.glmnet(X, y, alpha = 1)
+plot(cv.lasso)
+
+# Coefficients for best Lasso model
+best.lambda <- cv.lasso$lambda.min
+predict(cv.lasso, s = best.lambda, type = "coefficients")
+coef(cv.lasso, s=best.lambda)
+```
+
+## Dimension Reduction Methods
+### Principal Components Regression (PCR)
+* PCR first performs principal component analysis (PCA) on the predictors and then performs regression using the principal components instead of the original variables
+* The components capture the directions of greatest variance in the predictors
+* Use PCR when predictors are highly correlated, p is large, and we want to reduce dimensionality before regression
+```{r}
+# PCR
+pcr.fit <- pcr(medv ~ ., data = Boston, scale = TRUE, validation = "CV")
+validationplot(pcr.fit, val.type = "MSEP")
+```
+
+### Partial Least Squares (PLS)
+* PLS is similar to PCR but differs because it chooses components using both predictors and the response variable
+* This means the components are selected to maximize covariance with the response
+* Use PLS when the predictors are highly correlated, you want dimension reduction, and you want components that directly help predict Y
+```{r}
+# PLS
+pls.fit <- plsr(medv ~ ., data = Boston, scale = TRUE, validation = "CV")
+summary(pls.fit)
+```
+
+# Chapter 7 - Moving Beyond Linearity
+### Polynomial Regression and Step Functions
+* Polynomials: Extending linear models by adding extra predictors (powers of X).
+* Step Functions: Breaking the range of X into bins.
+```{r}
+# Polynomial Regression (Degree 4)
+fit.poly <- lm(medv ~ poly(lstat, 4), data = Boston)
+
+# Step Functions
+table(cut(Boston$lstat, 4)) # Create 4 bins
+fit.step <- lm(medv ~ cut(lstat, 4), data = Boston)
+```
+
+### Splines and GAMs
+* Regression Splines: Piecewise polynomials joined at "knots."
+* Smoothing Splines: Minimizes RSS with a roughness penalty.
+* GAMs (Generalized Additive Models): Allows for non-linear functions of multiple predictors.
+```{r}
+library(splines)
+library(gam)
+
+# Regression Spline with specified knots
+fit.spline <- lm(medv ~ bs(lstat, knots = c(10, 20, 30)), data = Boston)
+
+# GAM using Smoothing Splines (s)
+fit.gam <- gam(medv ~ s(lstat, 4) + s(rm, 4), data = Boston)
+par(mfrow = c(1, 2))
+plot(fit.gam, se = TRUE, col = "blue")
+```
+
+# Chapter 8 - Tree-Based Methods
+### Decision Trees
+Simple, interpretable, but prone to overfitting.
+```{r}
+library(tree)
+
+# Classification Tree
+tree.default <- tree(default ~ ., data = train_data)
+plot(tree.default)
+text(tree.default, pretty = 0)
+
+# Pruning
+cv.default <- cv.tree(tree.default, FUN = prune.misclass)
+prune.default <- prune.misclass(tree.default, best = 5)
+```
+
+### Bagging and Random Forests
+* Bagging: Building multiple trees from bootstrapped samples and averaging them.
+* Random Forest: Like bagging, but decorrelates trees by only considering a subset of predictors at each split.
+```{r}
+library(randomForest)
+
+# Bagging (mtry = total number of predictors)
+bag.boston <- randomForest(medv ~ ., data = Boston, mtry = 13, importance = TRUE)
+
+# Random Forest (mtry = default is p/3 for regression, sqrt(p) for class)
+rf.boston <- randomForest(medv ~ ., data = Boston, importance = TRUE)
+importance(rf.boston)
+varImpPlot(rf.boston)
+```
+
+### Boosting
+Builds trees sequentially; each tree learns from the residuals of the previous ones.
+```{r}
+library(gbm)
+
+# Boosting (Distribution "gaussian" for regression, "bernoulli" for binary class)
+boost.boston <- gbm(medv ~ ., data = Boston, distribution = "gaussian", 
+                    n.trees = 5000, interaction.depth = 4)
+
+summary(boost.boston) # Variable importance
+```
+
+# Chapter 9 - Support Vector Machines
+### Support Vector Classifier
+Linear boundary: uses a "cost" parameter to allow for observations to be on the wrong side of the margin.
+```{r}
+library(e1071)
+
+# Linear kernel
+svc.fit <- svm(default ~ balance + income, data = train_data, 
+               kernel = "linear", cost = 10, scale = TRUE)
+
+# Cross-validation to find best cost
+tune.out <- tune(svm, default ~ balance + income, data = train_data, 
+                 kernel = "linear", ranges = list(cost = c(0.1, 1, 10)))
+best.svc <- tune.out$best.model
+```
+
+### Support Vector Machines (SVM)
+Uses kernels (Radial, Polynomial) to create non-linear decision boundaries.
+```{r}
+# Radial Kernel
+svm.radial <- svm(default ~ balance + income, data = train_data, 
+                  kernel = "radial", gamma = 1, cost = 1)
+
+# Plotting the boundary (Note: only works for 2 predictors)
+plot(svm.radial, train_data, balance ~ income)
+
+# Predictions
+svm.pred <- predict(svm.radial, test_data)
+table(predict = svm.pred, truth = test_data$default)
+```
+
+

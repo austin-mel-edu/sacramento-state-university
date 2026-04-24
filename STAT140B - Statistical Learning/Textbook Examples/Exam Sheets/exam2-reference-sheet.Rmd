@@ -1,0 +1,154 @@
+---
+title: "ISLR2 Exam Cheat Sheet: Chapters 6-9"
+author: "ISLR2 Lab Summary"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+# Required Libraries
+library(ISLR2)
+library(leaps)    # Chapter 6: Selection
+library(glmnet)   # Chapter 6: Ridge/Lasso
+library(pls)      # Chapter 6: PCR/PLS
+library(splines)  # Chapter 7: Splines
+library(gam)      # Chapter 7: GAMs
+library(tree)     # Chapter 8: Trees
+library(randomForest) # Chapter 8: Bagging/RF
+library(gbm)      # Chapter 8: Boosting
+library(BART)     # Chapter 8: BART
+library(e1071)    # Chapter 9: SVM
+```
+
+# Chapter 6: Linear Model Selection & Regularization
+## Best Subset and Stepwise Selection
+We use regsubsets() to find the best model for each size. By default, it only goes up to 8 variables; use nvmax to increase this.
+
+```{r}
+# Data cleaning for Hitters dataset
+data("Hitters")
+Hitters <- na.omit(Hitters)
+
+# Best Subset Selection
+regfit.full <- regsubsets(Salary ~ ., data = Hitters, nvmax = 19)
+reg.summary <- summary(regfit.full)
+
+# Plotting metrics: Adjusted R2, Cp, and BIC
+par(mfrow = c(2, 2))
+plot(reg.summary$rss, xlab = "Variables", ylab = "RSS", type = "l")
+plot(reg.summary$adjr2, xlab = "Variables", ylab = "Adjusted R2", type = "l")
+points(which.max(reg.summary$adjr2), reg.summary$adjr2[which.max(reg.summary$adjr2)], col = "red", cex = 2, pch = 20)
+
+# Forward/Backward Stepwise
+regfit.fwd <- regsubsets(Salary ~ ., data = Hitters, nvmax = 19, method = "forward")
+```
+
+## Ridge Regression and Lasso
+Requires a matrix input x and a vector y. Use cv.glmnet for automatic selection of the tuning parameter $\lambda$.
+```{r}
+x <- model.matrix(Salary ~ ., Hitters)[, -1]
+y <- Hitters$Salary
+
+# alpha = 0 is Ridge, alpha = 1 is Lasso
+cv.out <- cv.glmnet(x, y, alpha = 1)
+bestlam <- cv.out$lambda.min
+
+# Final model coefficients
+lasso.coef <- predict(cv.out, type = "coefficients", s = bestlam)
+lasso.coef
+```
+
+# Chapter 7: Moving Beyond Linearity
+## Polynomials and Splines
+poly() creates orthogonal polynomials by default. Splines allow for localized fitting using knots.
+
+```{r}
+# Polynomial Degree 4
+fit_poly <- lm(wage ~ poly(age, 4), data = Wage)
+
+# Splines: bs() for B-splines, ns() for Natural Splines (stable at boundaries)
+fit_spline <- lm(wage ~ ns(age, df = 4), data = Wage)
+
+# Smoothing Spline: Automatic DOF via Generalized Cross-Validation
+fit_smooth <- smooth.spline(Wage$age, Wage$wage, cv = TRUE)
+```
+
+## Generalized Additive Models (GAMs)
+GAMs use the gam() function to fit additive models with smoothing terms s().
+
+```{r}
+gam_m3 <- gam(wage ~ s(year, 4) + s(age, 5) + education, data = Wage)
+par(mfrow = c(1, 3))
+plot(gam_m3, se = TRUE, col = "blue")
+```
+
+# Chapter 8: Tree-Based Methods
+## Classification and Regression Trees
+Trees are grown via tree() and then pruned via cost-complexity pruning using cv.tree().
+```{r}
+# Create binary classification variable
+High <- factor(ifelse(Carseats$Sales <= 8, "No", "Yes"))
+Carseats_df <- data.frame(Carseats, High)
+
+# Fit and Prune
+tree_carseats <- tree(High ~ . - Sales, Carseats_df)
+cv_carseats <- cv.tree(tree_carseats, FUN = prune.misclass)
+# Select best tree size (e.g., 9 nodes)
+pruned_tree <- prune.misclass(tree_carseats, best = 9)
+
+plot(pruned_tree)
+text(pruned_tree, pretty = 0)
+```
+
+```{r}
+data(Carseats)
+
+set.seed(1)
+train <- sample(1:nrow(Carseats), nrow(Carseats)/2)
+
+tree_fit <- tree(Sales ~ ., data = Carseats, subset = train)
+
+rf_fit <- randomForest(Sales ~ ., data = Carseats, subset = train)
+rf_fit
+importance(rf_fit)
+```
+
+
+## Random Forests, Boosting, and BART
+Ensemble methods combine multiple trees to improve accuracy.
+```{r}
+# Random Forest: mtry < p (usually sqrt(p) for class, p/3 for reg)
+rf_boston <- randomForest(medv ~ ., data = Boston, mtry = 6, importance = TRUE)
+
+# Boosting: Sequential growth. shrinkage = learning rate
+boost_boston <- gbm(medv ~ ., data = Boston, distribution = "gaussian", 
+                    n.trees = 5000, interaction.depth = 4, shrinkage = 0.01)
+
+# BART: Bayesian approach
+# bart_fit <- gbart(x_train, y_train, x.test = x_test)
+```
+
+# Chapter 9: Support Vector Machines
+## Support Vector Classifier (Linear Kernel)
+Used for classification. The dependent variable y must be a factor.
+
+```{r}
+# kernel = "linear" creates the Support Vector Classifier
+svm_linear <- svm(High ~ Price + Income, data = Carseats_df, 
+                  kernel = "linear", cost = 10)
+summary(svm_linear)
+```
+
+## Support Vector Machine (Radial/Polynomial)
+Use tune() to perform cross-validation over a grid of cost and gamma parameters.
+```{r}
+# Radial Kernel
+set.seed(1)
+tune_out <- tune(svm, High ~ Price + Income, data = Carseats_df, kernel = "radial",
+                 ranges = list(cost = c(0.1, 1, 10), gamma = c(0.5, 1, 2)))
+
+# Best model
+best_svm <- tune_out$best.model
+plot(best_svm, Carseats_df, Price ~ Income)
+```
+
