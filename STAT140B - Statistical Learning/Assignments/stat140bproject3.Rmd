@@ -1,0 +1,344 @@
+---
+title: "project3"
+author: "Austin Melendez"
+date: "2026-05-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+#install.packages("keras")
+#install.packages("magick")
+#install.packages("ISLR2")
+#install.packages("torch")
+#install.packages("torchvision")
+#install.packages("tidyverse")
+#install.packages("corrplot")
+
+library(keras)
+library(magick)
+library(ISLR2)
+library(torch)
+library(torchvision)
+library(tidyverse)
+library(corrplot)
+```
+
+# Project 3: Neural Networks & Clustering
+
+## Part 1: Neural Networks
+From your collection of personal photographs, pick 10 images of animals (such as dogs, cats, birds, farm animals, etc.). If the subject does not occupy a reasonable part of the image, then crop the image.
+
+Now use a pretrained image classification CNN as in Lab 10.9.4 to predict the class of each of your images, and report the probabilities for the top five predicted classes for each image.
+
+Make sure to include your original images as part of your project submission. 
+
+### (From Your Revised Textbook Lab 10) 
+### Using Pretrained CNN Models
+```{r}
+setwd("C:/Users/Austin/Desktop/Everything/Coding/sacramento-state-university/STAT140B - Statistical Learning/Assignments/project3data/") # you will need to update this! #
+img_dir <- "cnn"
+image_names <- list.files(img_dir)
+num_images <- length(image_names)
+x <- torch_empty(num_images, 3, 224, 224)
+for (i in 1:num_images) {
+   img_path <- file.path(img_dir, image_names[i])
+   img <- img_path %>% 
+     base_loader() %>% 
+     transform_to_tensor() %>% 
+     transform_resize(c(224, 224)) %>% 
+     
+     # normalize with imagenet mean and stds.
+     transform_normalize(
+       mean = c(0.485, 0.456, 0.406),
+       std = c(0.229, 0.224, 0.225)
+     )
+   x[i,,, ] <- img
+}
+```
+
+We then load the trained network. The model has 18 layers, with a fair bit of complexity.
+
+```{r}
+model <- torchvision::model_resnet18(pretrained = TRUE)
+model$eval() # put the model in evaluation mode
+```
+
+Finally, we classify our images, and return the top five class
+choices in terms of predicted probability for each.
+
+```{r}
+preds <- model(x)
+
+mapping <- jsonlite::read_json("https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json") %>% 
+  sapply(function(x) x[[2]])
+
+top5 <- torch_topk(preds, dim = 2, k = 5)
+
+top5_prob <- top5[[1]] %>% 
+  nnf_softmax(dim = 2) %>% 
+  torch_unbind() %>% 
+  lapply(as.numeric)
+
+top5_class <- top5[[2]] %>% 
+  torch_unbind() %>% 
+  lapply(function(x) mapping[as.integer(x)])
+
+result <- purrr::map2(top5_prob, top5_class, function(pr, cl) {
+  names(pr) <- cl
+  pr
+})
+names(result) <- image_names
+print(result)
+```
+
+The images I used are:
+
+```{r}
+library(jpeg)
+library(png)
+
+img_dir <- "project3data/cnn"
+
+image_names <- c(
+  "australian_shepard.jpg",
+  "australian_shepard2.jpg",
+  "bald_eagle.jpg",
+  "banana_slug.jpg",
+  "bird.jpg",
+  "black_laborador.jpg",
+  "deer.jpg",
+  "duck.jpg",
+  "hawaiian_green_sea_turtle.jpg",
+  "yellow_field_laborador.jpg",
+  "yellow_field_laborador2.jpg"
+)
+
+par(mfrow = c(2,3), mar = c(1,1,2,1))
+
+for(i in 1:length(image_names)){
+
+  img_path <- file.path(img_dir, image_names[i])
+  img <- jpeg::readJPEG(img_path)
+
+  plot(1:2,
+       type = "n",
+       axes = FALSE,
+       xlab = "",
+       ylab = "",
+       main = image_names[i])
+
+  rasterImage(img, 1, 1, 2, 2)
+}
+```
+
+For further reference, the full-sized images I used are uploaded and labeled here on [Imgur.com](https://imgur.com/a/DraPV2s):
+
+## Part 2: Unsupervised Learning
+
+The dataset I used was [The Repeat Consumption Matrices dataset](https://archive.ics.uci.edu/dataset/441/repeat+consumption+matrices). It contains consumer repeat-purchase behavior data, each matrix contains how many times a user 'consumed' and item. Items can be locations, artists, or subreddits.
+
+The goal of this analysis is to identify patterns in repeat consumer purchasing behavior using several unsupervised learning techniques discussed in ISLR2. Specifically, this report applies:
+
+- Principal Components Analysis (PCA)
+- K-means clustering
+- Hierarchical clustering
+
+## 1. Dataset Description
+
+The Repeat Consumption Matrices dataset contains repeat-purchase behavior information for consumers. The data measure patterns of repeated item consumption and are useful for identifying groups of consumers with similar purchasing behavior.
+
+The dataset contains user-item consumption matrices from several online platforms such as Reddit, Twitter, Gowalla, and LastFM. Each row represents a user and each column represents an item. Entries represent the number of times a user consumed that item.
+
+The **primary goal** is to determine whether users naturally separate into distinct groups based on their listening behavior.
+
+## 2. Data Description
+
+According to the data dictionary:
+
+**lastfm** *(992 x 15k)*: How many times a user listened to each artist.
+
+So the LastFM subset contains:
+- 992 users
+- ~15,000 artists
+
+## 3. Loading Data
+
+```{r}
+setwd("C:/Users/Austin/Desktop/Everything/Coding/sacramento-state-university/STAT140B - Statistical Learning/Assignments/")
+
+data_dir <- "project3data"
+url <- "lastfm/train.csv"
+
+raw_data <- read.csv(file.path(data_dir, url), header = FALSE)
+
+colnames(raw_data) <- c("user", "artist", "count")
+
+top_users <- raw_data %>%
+  group_by(user) %>%
+  summarise(total = sum(count)) %>%
+  arrange(desc(total)) %>%
+  slice(1:150)
+
+top_artists <- raw_data %>%
+  group_by(artist) %>%
+  summarise(total = sum(count)) %>%
+  arrange(desc(total)) %>%
+  slice(1:100)
+
+filtered <- raw_data %>%
+  filter(user %in% top_users$user,
+         artist %in% top_artists$artist)
+
+music_matrix <- xtabs(count ~ user + artist, data = filtered)
+
+dim(music_matrix)
+```
+
+## 4. Exploratory Data Analysis
+
+```{r}
+counts <- as.vector(music_matrix)
+
+hist(counts,
+     breaks = 40,
+     main = "Distribution of Listening Counts",
+     xlab = "Listening Count")
+```
+
+```{r}
+counts <- as.vector(music_matrix)
+
+hist(counts[counts > 0 & counts < 100],
+     breaks = 50,
+     main = "Zoomed Distribution",
+     xlab = "Count")
+```
+
+```{r}
+artist_variance <- apply(music_matrix, 2, var)
+
+hist(artist_variance,
+     breaks = 30,
+     main = "Variance Across Artists",
+     xlab = "Variance")
+```
+
+```{r}
+top_var_cols <- order(artist_variance, decreasing = TRUE)[1:12]
+
+cor_matrix <- cor(music_matrix[, top_var_cols],
+                  use = "pairwise.complete.obs")
+
+corrplot::corrplot(cor_matrix,
+                   method = "color",
+                   tl.cex = 0.7)
+```
+
+## 5. Standardization
+
+```{r}
+# remove zero-variance columns
+keep <- apply(music_matrix, 2, var) > 0
+music_matrix <- music_matrix[, keep]
+
+# convert to plain matrix (important for stability)
+music_matrix <- as.matrix(music_matrix)
+
+# scale safely
+scaled_matrix <- scale(music_matrix)
+
+# remove any rows with NA/Inf after scaling
+scaled_matrix <- scaled_matrix[complete.cases(scaled_matrix), , drop = FALSE]
+
+# remove any remaining degenerate rows (all constant)
+scaled_matrix <- scaled_matrix[apply(scaled_matrix, 1, var) > 0, , drop = FALSE]
+```
+
+## 6. PCA
+
+```{r}
+pca_fit <- prcomp(scaled_matrix)
+
+pve <- (pca_fit$sdev^2) / sum(pca_fit$sdev^2)
+
+plot(pve,
+     type = "b",
+     xlab = "Principal Component",
+     ylab = "Proportion of Variance Explained",
+     main = "Scree Plot")
+
+scores <- pca_fit$x
+
+plot(scores[,1],
+     scores[,2],
+     xlab = "PC1",
+     ylab = "PC2",
+     main = "PCA Score Plot")
+```
+
+## 7. K-Means Clustering
+
+```{r}
+set.seed(1)
+
+# cap k so it can never exceed number of observations - 1
+max_k <- min(10, n - 1)
+
+wss <- numeric(max_k)
+
+for(k in 1:max_k){
+  km <- kmeans(scaled_matrix, centers = k, nstart = 20)
+  wss[k] <- km$tot.withinss
+}
+
+plot(1:max_k, wss,
+     type = "b",
+     xlab = "Number of Clusters",
+     ylab = "Within-Cluster Sum of Squares",
+     main = "Elbow Plot for K-Means Clustering")
+```
+
+```{r}
+km_fit <- kmeans(scaled_matrix, centers = 3, nstart = 50)
+
+table(km_fit$cluster)
+
+plot(scores[,1],
+     scores[,2],
+     col = km_fit$cluster,
+     pch = 19,
+     xlab = "PC1",
+     ylab = "PC2",
+     main = "K-Means Clusters on PCA Scores")
+```
+
+## 8. Hierarchical Clustering
+
+```{r}
+dist_matrix <- dist(scaled_matrix)
+
+hc_complete <- hclust(dist_matrix, method = "complete")
+
+plot(hc_complete, labels = FALSE)
+
+hc_clusters <- cutree(hc_complete, k = 3)
+
+table(hc_clusters)
+
+plot(scores[,1],
+     scores[,2],
+     col = hc_clusters,
+     pch = 19,
+     xlab = "PC1",
+     ylab = "PC2",
+     main = "Hierarchical Clusters on PCA Scores")
+```
+
+## Conclusion
+
+PCA and clustering reveal approximately three stable groups of users with consistent structure across methods.
+```

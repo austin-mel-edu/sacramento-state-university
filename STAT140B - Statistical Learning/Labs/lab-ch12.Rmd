@@ -1,0 +1,168 @@
+---
+title: "lab12"
+author: "Austin Melendez"
+date: "2026-05-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+#install.packages("ISLR2")
+#install.packages("dendextend")
+
+library(ISLR2)
+library(dendextend)
+```
+Section 12.6: Exercises 9, 13
+
+## Exercise 9
+Consider the `USArrests data`. We will now perform hierarchical clustering on the states.
+```{r}
+# Load data
+data("USArrests")
+```
+
+### (a) Using hierarchial cluster with complete linkage and Euclidean distance, cluster the states.
+```{r}
+# Compute Euclidean distance matrix
+distances <- dist(USArrests)
+
+# Hierarchical clustering using complete linkage
+hc.complete <- hclust(distances, method = "complete")
+
+# Convert to dendrogram and color clusters
+dend.complete <- as.dendrogram(hc.complete)
+dend.complete <- color_branches(dend.complete, k = 3)
+
+# Plot dendrogram
+plot(dend.complete,
+     main = "Hierarchical Clustering of USArrests",
+     xlab = "",
+     sub = "")
+```
+
+### (b) Cut the dendrogram at a height that results in three distinct clusters. Which states belong to which clusters?
+```{r}
+# Cut tree into 3 clusters
+clusters <- cutree(hc.complete, 3)
+
+# Display states in each cluster
+split(names(clusters), clusters)
+```
+
+### (c) Hierarchically cluster the states using complete linkage and Euclidean distance, after scaling the variables to have standard deviation one.
+```{r}
+# Scale variables
+scaled.data <- scale(USArrests)
+
+# Compute distances on scaled data
+dist.scaled <- dist(scaled.data)
+
+# Hierarchical clustering
+hc.scaled <- hclust(dist.scaled, method = "complete")
+
+# Convert to dendrogram and color clusters
+dend.scaled <- as.dendrogram(hc.scaled)
+dend.scaled <- color_branches(dend.scaled, k = 3)
+
+# Plot dendrogram
+plot(dend.scaled,
+     main = "Hierarchical Clustering of Scaled USArrests",
+     xlab = "",
+     sub = "")
+```
+
+### (d) What effect does scaling the variables have on the hierarchical clustering obtained? In your opinion, should the variables be scaled before the interobservation dissimilarities are computed?
+
+
+## Exercise 13
+On the book website, www.statlearning.com, there is a gene expression data set `Ch12Ex13.csv` that consists of 40 tissue samples with measurements on 1,000 genes. The first 20 samples are from healthy patients, while the second 20 are from a diseased group.
+
+
+### (a) Load in the data using read.csv(). You will need to select header = F.
+```{r}
+# Load gene expression data
+gene.data <- read.csv("Ch12Ex13.csv", header = FALSE)
+
+# Check dimensions
+dim(gene.data)
+```
+
+The dataset contains:
+
+- 40 tissue samples
+- 1,000 gene expression measurements
+
+The first 20 samples are healthy patients and the next 20 are diseased patients.
+
+### (b) Apply hierarchical clustering to the samples using correlation based distance, and plot the dendrogram. Do the genes separate the samples into the two groups? Do your results depend on the type of linkage used?
+```{r}
+# Transpose so rows = samples
+gene.data.t <- t(gene.data)
+
+# Correlation-based distance
+gene.cor <- cor(gene.data.t)
+
+gene.dist <- as.dist(1 - gene.cor)
+
+# Complete linkage clustering
+hc.genes.complete <- hclust(gene.dist, method = "complete")
+
+
+# Convert to dendrogram and color clusters
+dend.genes.complete <- as.dendrogram(hc.genes.complete)
+dend.genes.complete <- color_branches(dend.genes.complete, k = 2)
+
+# Plot dendrogram
+plot(dend.genes.complete,
+     main = "Gene Expression Clustering (Complete Linkage)",
+     xlab = "",
+     sub = "")
+```
+
+```{r}
+# Average linkage
+hc.genes.average <- hclust(gene.dist, method = "average")
+
+# Convert to dendrogram and color clusters
+dend.genes.average <- as.dendrogram(hc.genes.average)
+dend.genes.average <- color_branches(dend.genes.average, k = 2)
+
+plot(dend.genes.average,
+     main = "Gene Expression Clustering (Average Linkage)",
+     xlab = "",
+     sub = "")
+```
+
+The samples generally separate into two major clusters corresponding to:
+
+- Healthy tissue samples
+- Diseased tissue samples
+
+### (c) Your collaborator wants to know which genes differ the most across the two groups. Suggest a way to answer this question, and apply it here.
+
+A simple approach is to compare the mean expression level of each gene between healthy and diseased samples.
+
+```{r}
+# Healthy and diseased groups
+healthy <- gene.data[, 1:20]
+disease <- gene.data[, 21:40]
+
+# Compute difference in mean expression
+mean.diff <- abs(rowMeans(healthy) - rowMeans(disease))
+
+# Find genes with largest differences
+top.genes <- order(mean.diff, decreasing = TRUE)[1:10]
+
+# Display top genes
+print("Top genes with largest differences:")
+top.genes
+
+# Corresponding differences
+print("Corresponding differences:")
+mean.diff[top.genes]
+```
+

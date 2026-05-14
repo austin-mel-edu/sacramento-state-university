@@ -1,0 +1,215 @@
+---
+title: "lab-ch10"
+author: "Austin Melendez"
+date: "2026-05-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+#install.packages("torch")
+#install.packages("luz")
+#install.packages("ISLR2")
+#install.packages("glmnet")
+#install.packages("dplyr")
+
+
+library(ISLR2)
+library(torch)
+library(luz)
+library(glmnet)
+library(dplyr)
+
+```
+Section 10.10: Exercises 7, 9
+
+## Exercise 7
+Fit a neural network to the Default data. Use a single hidden layer with 10 units, and dropout regularization. Have a look at Labs 10.9.1– 10.9.2 for guidance. Compare the classification performance of your model with that of linear logistic regression.
+
+```{r}
+set.seed(1)
+torch_manual_seed(1)
+
+# Load data
+Default <- ISLR2::Default
+
+# Convert response to numeric
+Default$default_num <- ifelse(Default$default == "Yes", 1, 0)
+
+# Create model matrix
+x <- model.matrix(default ~ . - default_num - 1, data = Default) %>% scale()
+y <- Default$default_num
+
+# Train/test split
+n <- nrow(Default)
+testid <- sample(1:n, n / 3)
+```
+
+Lets do a Logistic Regression first:
+```{r}
+glm.fit <- glm(default_num ~ balance + income + student,
+               data = Default[-testid, ],
+               family = binomial)
+
+glm.prob <- predict(glm.fit,
+                    newdata = Default[testid, ],
+                    type = "response")
+
+glm.pred <- ifelse(glm.prob > 0.5, 1, 0)
+
+glm.acc <- mean(glm.pred == y[testid])
+
+print("Logistic Regression Accuracy:")
+glm.acc
+```
+
+Then try a Neural Network from your reworked Chapter 10 Lab:
+```{r}
+modnn <- nn_module(
+  initialize = function(input_size) {
+    self$hidden <- nn_linear(input_size, 10)
+    self$activation <- nn_relu()
+    self$dropout <- nn_dropout(0.4)
+    self$output <- nn_linear(10, 1)
+  },
+
+  forward = function(x) {
+    x %>%
+      self$hidden() %>%
+      self$activation() %>%
+      self$dropout() %>%
+      self$output() %>%
+      torch_flatten(start_dim = 1)
+  }
+)
+
+modnn <- modnn %>%
+  setup(
+    loss = nn_bce_with_logits_loss(),
+    optimizer = optim_rmsprop,
+    metrics = list(luz_metric_binary_accuracy_with_logits())
+  ) %>%
+  set_hparams(input_size = ncol(x))
+
+# Fit neural network
+fitted <- modnn %>%
+  fit(
+    data = list(
+      x[-testid, ],
+      y[-testid]
+    ),
+    valid_data = list(
+      x[testid, ],
+      y[testid]
+    ),
+    epochs = 20
+  )
+```
+
+```{r}
+# Plot training history
+plot(fitted)
+
+# Neural network predictions
+nn.prob <- predict(fitted, x[testid, ]) %>%
+  torch_sigmoid() %>%
+  as_array()
+
+nn.pred <- ifelse(nn.prob > 0.5, 1, 0)
+
+nn.acc <- mean(nn.pred == y[testid])
+
+print("Neural Network Accuracy:")
+nn.acc
+```
+
+```{r}
+# Compare results
+data.frame(
+  Model = c("Logistic Regression", "Neural Network"),
+  Accuracy = c(glm.acc, nn.acc)
+)
+```
+
+We see that they actually perform very similarly, the Neural Network improved on the Logistic Regression's Accuracy by only $0.0015$ or $0.15$%.
+
+## Exercise 9
+Fit a lag-5 autoregressive model to the NYSE data, as described in the text and Lab 10.9.6. Refit the model with a 12-level factor representing the month. Does this factor improve the performance of the model?
+
+```{r}
+data("NYSE")
+
+# Create lag variables
+NYSE$lag1 <- c(NA, NYSE$DJ_return[-nrow(NYSE)])
+NYSE$lag2 <- c(NA, NYSE$lag1[-nrow(NYSE)])
+NYSE$lag3 <- c(NA, NYSE$lag2[-nrow(NYSE)])
+NYSE$lag4 <- c(NA, NYSE$lag3[-nrow(NYSE)])
+NYSE$lag5 <- c(NA, NYSE$lag4[-nrow(NYSE)])
+
+# Remove missing rows
+NYSE <- na.omit(NYSE)
+
+# 12-level factor for the month
+NYSE$date <- as.Date(NYSE$date)
+NYSE$Month <- as.factor(format(NYSE$date, "%m"))
+```
+
+```{r}
+n <- nrow(NYSE)
+
+train <- 1:(n / 2)
+test <- (n / 2 + 1):n
+```
+
+### Lag-5 Autoregressive Model
+```{r}
+fit1 <- lm(
+  DJ_return ~ lag1 + lag2 + lag3 + lag4 + lag5,
+  data = NYSE,
+  subset = train
+)
+
+pred1 <- predict(fit1, newdata = NYSE[test, ])
+
+mse1 <- mean(
+  (NYSE$DJ_return[test] - pred1)^2
+)
+
+
+print("Lag-5 Model Test MSE:")
+print(mse1)
+```
+
+### Lag-5 Model w/ 12-Month Factor
+```{r}
+fit2 <- lm(
+  DJ_return ~ lag1 + lag2 + lag3 +
+    lag4 + lag5 + Month,
+  data = NYSE,
+  subset = train
+)
+
+pred2 <- predict(fit2, newdata = NYSE[test, ])
+
+mse2 <- mean(
+  (NYSE$DJ_return[test] - pred2)^2
+)
+
+print("Lag-5 + Month Factor Test MSE:")
+print(mse2)
+```
+
+Let's compare the two models:
+```{r}
+results <- data.frame(
+  Model = c("Lag-5 AR", "Lag-5 AR + Month"),
+  Test_MSE = c(mse1, mse2)
+)
+
+print(results)
+```
+
+Adding the month as a factor very slightly improved our model. It lowered the Test MSE by $0.005$.
