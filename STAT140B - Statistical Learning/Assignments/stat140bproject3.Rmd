@@ -2,7 +2,10 @@
 title: "project3"
 author: "Austin Melendez"
 date: "2026-05-07"
-output: html_document
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -16,7 +19,8 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("torch")
 #install.packages("torchvision")
 #install.packages("tidyverse")
-#install.packages("corrplot")
+#install.packages("knitr")
+#install.packages("cluster")
 
 library(keras)
 library(magick)
@@ -24,17 +28,23 @@ library(ISLR2)
 library(torch)
 library(torchvision)
 library(tidyverse)
-library(corrplot)
+library(knitr)
+library(cluster)
 ```
 
 # Project 3: Neural Networks & Clustering
+## Introduction
+This report has two parts. First, I use a pre-trained convolutional neural network
+to classify my own animal photographs and summarize the five most likely ImageNet
+classes for each image. Second, I use unsupervised learning methods to study
+repeat listening behavior in the LastFM portion of the UCI Repeat Consumption
+Matrices dataset.
 
 ## Part 1: Neural Networks
-From your collection of personal photographs, pick 10 images of animals (such as dogs, cats, birds, farm animals, etc.). If the subject does not occupy a reasonable part of the image, then crop the image.
-
-Now use a pretrained image classification CNN as in Lab 10.9.4 to predict the class of each of your images, and report the probabilities for the top five predicted classes for each image.
-
-Make sure to include your original images as part of your project submission. 
+### Image Data
+I selected ten animal photographs from my personal photos. I used images where
+the animal occupies a reasonable part of the frame, or where the image had been
+cropped so that the animal is visually central. The images are referenced below the model's outputs for comparison.
 
 ### (From Your Revised Textbook Lab 10) 
 ### Using Pretrained CNN Models
@@ -59,17 +69,18 @@ for (i in 1:num_images) {
    x[i,,, ] <- img
 }
 ```
+Before sending the images through the model, I resized each image to
+224 by 224 pixels and normalized the color channels using the ImageNet means and
+standard deviations. This preprocessing matters because the model was originally
+trained on images prepared in this same way.
 
-We then load the trained network. The model has 18 layers, with a fair bit of complexity.
-
+I then load the trained ResNet-18 network. The model has 18 layers, with a fair bit of complexity.
 ```{r}
 model <- torchvision::model_resnet18(pretrained = TRUE)
 model$eval() # put the model in evaluation mode
 ```
-
 Finally, we classify our images, and return the top five class
 choices in terms of predicted probability for each.
-
 ```{r}
 preds <- model(x)
 
@@ -91,12 +102,15 @@ result <- purrr::map2(top5_prob, top5_class, function(pr, cl) {
   names(pr) <- cl
   pr
 })
+
 names(result) <- image_names
 print(result)
 ```
+Overall, the pretrained model performed well on these images. Seven of the ten photos had a top prediction that matched the animal in the image closely: the bald eagle, banana slug, bird, duck, turtle, and both yellow Labrador photographs were classified with high confidence. 
+
+The Australian shepherd was classified as a Border collie, which is not exactly correct but is still a visually similar herding dog breed. The black Labrador and deer images were less successful: the black Labrador was predicted as a Great Dane, and the deer was predicted as an ibex. These errors are understandable because ImageNet contains many visually similar animal classes, and the model may respond strongly to pose, color, and background cues rather than to the exact animal identity.
 
 The images I used are:
-
 ```{r}
 library(jpeg)
 library(png)
@@ -105,7 +119,6 @@ img_dir <- "project3data/cnn"
 
 image_names <- c(
   "australian_shepard.jpg",
-  "australian_shepard2.jpg",
   "bald_eagle.jpg",
   "banana_slug.jpg",
   "bird.jpg",
@@ -113,11 +126,11 @@ image_names <- c(
   "deer.jpg",
   "duck.jpg",
   "hawaiian_green_sea_turtle.jpg",
-  "yellow_field_laborador.jpg",
-  "yellow_field_laborador2.jpg"
+  "yellow_laborador.jpg",
+  "yellow_laborador2.jpg"
 )
 
-par(mfrow = c(2,3), mar = c(1,1,2,1))
+par(mfrow = c(2, 5), mar = c(1, 1, 2, 1))
 
 for(i in 1:length(image_names)){
 
@@ -134,14 +147,11 @@ for(i in 1:length(image_names)){
   rasterImage(img, 1, 1, 2, 2)
 }
 ```
-
-For further reference, the full-sized images I used are uploaded and labeled here on [Imgur.com](https://imgur.com/a/DraPV2s):
-
 ## Part 2: Unsupervised Learning
 
-The dataset I used was [The Repeat Consumption Matrices dataset](https://archive.ics.uci.edu/dataset/441/repeat+consumption+matrices). It contains consumer repeat-purchase behavior data, each matrix contains how many times a user 'consumed' and item. Items can be locations, artists, or subreddits.
+For the clustering portion of the project, I used the [Repeat Consumption Matrices dataset](https://archive.ics.uci.edu/dataset/441/repeat+consumption+matrices) from the UC Irvine Machine Learning Repository. The full dataset contains several user-item matrices from Reddit, Twitter, Gowalla, and LastFM. Each entry records how many times a user consumed an item. In the LastFM subset, each row represents a user, each column represents an artist, and each value is the number of times that user listened to that artist.
 
-The goal of this analysis is to identify patterns in repeat consumer purchasing behavior using several unsupervised learning techniques discussed in ISLR2. Specifically, this report applies:
+The goal of this analysis is to identify patterns in repeat consumer behavior using several unsupervised learning techniques discussed in ISLR2. Specifically, we apply:
 
 - Principal Components Analysis (PCA)
 - K-means clustering
@@ -149,196 +159,328 @@ The goal of this analysis is to identify patterns in repeat consumer purchasing 
 
 ## 1. Dataset Description
 
-The Repeat Consumption Matrices dataset contains repeat-purchase behavior information for consumers. The data measure patterns of repeated item consumption and are useful for identifying groups of consumers with similar purchasing behavior.
-
-The dataset contains user-item consumption matrices from several online platforms such as Reddit, Twitter, Gowalla, and LastFM. Each row represents a user and each column represents an item. Entries represent the number of times a user consumed that item.
+The LastFM matrix contains 992 users and approximately 15,000 artists. Because this matrix is extremely sparse and high-dimensional, I restricted the analysis to the 150 users with the largest total listening counts and the 100 artists with the largest total listening counts. I made this choice so that the resulting matrix would still represent active listening behavior but would be small enough to visualize and cluster clearly.
 
 The **primary goal** is to determine whether users naturally separate into distinct groups based on their listening behavior.
 
-## 2. Data Description
-
-According to the data dictionary:
-
-**lastfm** *(992 x 15k)*: How many times a user listened to each artist.
-
-So the LastFM subset contains:
-- 992 users
-- ~15,000 artists
-
-## 3. Loading Data
+## 2. Loading Data
 
 ```{r}
-setwd("C:/Users/Austin/Desktop/Everything/Coding/sacramento-state-university/STAT140B - Statistical Learning/Assignments/")
-
-data_dir <- "project3data"
-url <- "lastfm/train.csv"
-
-raw_data <- read.csv(file.path(data_dir, url), header = FALSE)
-
+data_file <- file.path("project3data", "lastfm", "train.csv")
+if (!file.exists(data_file)) {
+  stop("The LastFM file was not found at: ", data_file)
+}
+raw_data <- read.csv(data_file, header = FALSE)
 colnames(raw_data) <- c("user", "artist", "count")
+lastfm_overview <- tibble(
+  rows = nrow(raw_data),
+  users = n_distinct(raw_data$user),
+  artists = n_distinct(raw_data$artist),
+  total_listens = sum(raw_data$count),
+  missing_values = sum(is.na(raw_data))
+)
 
-top_users <- raw_data %>%
-  group_by(user) %>%
-  summarise(total = sum(count)) %>%
-  arrange(desc(total)) %>%
-  slice(1:150)
+print(lastfm_overview)
+```
+Before our analysis, we must first take the raw LastFM listening data and turns it into a smaller user-by-artist matrix that can be used for PCA and clustering.
 
-top_artists <- raw_data %>%
-  group_by(artist) %>%
-  summarise(total = sum(count)) %>%
-  arrange(desc(total)) %>%
-  slice(1:100)
+I first group the data by user, adds up each user’s total listening count, and keeps the 150 most active users. The reason for doing this is that the original dataset is very large and sparse, so focusing on active users gives more meaningful clustering patterns. We then find the 100 artists with the highest total listening counts across all users. This reduces the number of columns from thousands of artists to a smaller set of popular artists.
 
-filtered <- raw_data %>%
-  filter(user %in% top_users$user,
-         artist %in% top_artists$artist)
+```{r}
+top_users <- raw_data |>
+  group_by(user) |>
+  summarise(total_listens = sum(count), .groups = "drop") |>
+  slice_max(total_listens, n = 250, with_ties = FALSE)
+
+top_artists <- raw_data |>
+  group_by(artist) |>
+  summarise(total_listens = sum(count), .groups = "drop") |>
+  slice_max(total_listens, n = 50, with_ties = FALSE)
+
+filtered <- raw_data |>
+  filter(
+    user %in% top_users$user,
+    artist %in% top_artists$artist
+  )
 
 music_matrix <- xtabs(count ~ user + artist, data = filtered)
 
-dim(music_matrix)
-```
+matrix_overview <- tibble(
+  users = nrow(music_matrix),
+  artists = ncol(music_matrix),
+  nonzero_entries = sum(music_matrix > 0),
+  sparsity = round(mean(music_matrix == 0), 3)
+)
 
-## 4. Exploratory Data Analysis
+print(matrix_overview)
+```
+The filtered matrix is still sparse, meaning many users did not listen to many of the top artists. This is expected for music listening data: even active users tend to have concentrated preferences. Because a few very large play counts can dominate distances, I use `log1p(count)` before PCA and clustering.
 
 ```{r}
-counts <- as.vector(music_matrix)
+music_log <- log1p(as.matrix(music_matrix))
 
-hist(counts,
-     breaks = 40,
-     main = "Distribution of Listening Counts",
-     xlab = "Listening Count")
+artist_sds <- apply(music_log, 2, sd)
+
+music_log <- music_log[, artist_sds > 0, drop = FALSE]
+
+music_scaled <- scale(music_log)
+music_scaled <- as.matrix(music_scaled)
+storage.mode(music_scaled) <- "double"
+music_scaled <- unclass(music_scaled)
+
+distinct_user_profiles <- nrow(unique(as.data.frame(music_scaled)))
+```
+This keeps the difference between 0 and 1 listen meaningful while reducing the influence of extreme listening counts.
+
+## 3. Exploratory Data Analysis
+I first examined the distribution of listening counts because clustering methods based on Euclidean distance are sensitive to scale and outliers. I also looked at user totals and artist totals to understand whether the filtered data are balanced or dominated by a small number of users or artists.
+```{r}
+nonzero_counts <- as.numeric(music_matrix[music_matrix > 0])
+user_totals <- rowSums(music_matrix)
+artist_totals <- colSums(music_matrix)
+
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+
+hist(
+  nonzero_counts,
+  breaks = 40,
+  main = "Nonzero Listening Counts",
+  xlab = "Raw count"
+)
+
+hist(
+  log1p(nonzero_counts),
+  breaks = 40,
+  main = "Log-Transformed Listening Counts",
+  xlab = "log(1 + count)"
+)
+
+hist(
+  user_totals,
+  breaks = 25,
+  main = "Total Listens by User",
+  xlab = "Total listens"
+)
+
+hist(
+  artist_totals,
+  breaks = 25,
+  main = "Total Listens by Artist",
+  xlab = "Total listens"
+)
+```
+The raw counts are strongly right-skewed, with many small positive counts and a smaller number of very large values. After the log transformation, the distribution is less extreme. This supports using the log-transformed matrix for PCA and clustering rather than clustering directly on raw listening counts.
+
+## 4. Analysis
+### Principal Components Analysis
+
+I applied PCA to the scaled log-count matrix. Scaling is important because each artist is treated as a feature, and I wanted the PCA directions to reflect patterns across artists rather than simply giving more weight to artists with larger variance.
+
+```{r}
+pca_fit <- prcomp(music_scaled, center = FALSE, scale. = FALSE)
+
+pve <- pca_fit$sdev^2 / sum(pca_fit$sdev^2)
+
+cumulative_pve <- cumsum(pve)
+
+pca_summary <- tibble(
+  component = paste0("PC", 1:10),
+  proportion_variance = round(pve[1:10], 3),
+  cumulative_variance = round(cumulative_pve[1:10], 3)
+)
+
+print(pca_summary)
+```
+```{r}
+par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+plot(
+  pve[1:20],
+  type = "b",
+  pch = 19,
+  main = "Scree Plot",
+  xlab = "Principal component",
+  ylab = "Proportion of variance explained"
+)
+```
+The scree plot helps decide how many principal components contain meaningful structure. I do not expect the first component to explain all of the variation because music taste is complex and the data contain many artists. In this analysis, the plot begins to flatten more noticeably around the fourth principal component, so it would be reasonable to focus on the first four principal components as a lower-dimensional summary of the strongest listening patterns.
+
+### Choosing the Number of Clusters
+
+For k-means, I considered values of `k` from 2 through 8. I used two diagnostics: the elbow plot based on total within-cluster sum of squares and the average silhouette width. The elbow plot looks for a point where adding more clusters gives diminishing returns. The silhouette score measures how well separated the resulting clusters are.
+
+```{r}
+max_k <- min(8, distinct_user_profiles - 1)
+k_grid <- 2:max_k
+
+kmeans_wss <- map_dbl(k_grid, function(k) {
+  kmeans(music_scaled, centers = k, nstart = 25)$tot.withinss
+})
+
+kmeans_sil <- map_dbl(k_grid, function(k) {
+  km <- kmeans(music_scaled, centers = k, nstart = 25)
+  mean(silhouette(km$cluster, dist(music_scaled))[, 3])
+})
+
+best_k <- k_grid[which.max(kmeans_sil)]
+
+cluster_choice <- tibble(
+  k = k_grid,
+  total_within_ss = round(kmeans_wss, 1)
+)
+
+print(cluster_choice)
+```
+Let's check our best $k$ value.
+```{r}
+print(best_k)
+```
+We see that $k=2$ is our best value.
+
+```{r}
+par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+
+plot(
+  k_grid,
+  kmeans_wss,
+  type = "b",
+  pch = 19,
+  main = "Elbow Plot",
+  xlab = "Number of clusters",
+  ylab = "Total within-cluster SS"
+)
+abline(v = best_k, lty = 2, col = "red")
+
+plot(
+  k_grid,
+  kmeans_sil,
+  type = "b",
+  pch = 19,
+  main = "Average Silhouette",
+  xlab = "Number of clusters",
+  ylab = "Average silhouette width"
+)
+abline(v = best_k, lty = 2, col = "red")
+```
+Based on these diagnostics, I use 2 clusters for both k-means and hierarchical clustering. Using the same number of clusters makes the two methods easier to compare. 
+
+### K-Means Clustering
+K-means clustering partitions the users into groups by minimizing the within cluster squared distance. Because k-means can depend on the initial cluster centers, I used `nstart = 50` so that R tries multiple random initializations and keeps the best solution.
+
+```{r}
+km_fit <- kmeans(music_scaled, centers = best_k, nstart = 50)
 ```
 
 ```{r}
-counts <- as.vector(music_matrix)
+plot(
+  pca_fit$x[, 1],
+  pca_fit$x[, 2],
+  col = km_fit$cluster,
+  pch = 19,
+  main = "K-Means Clusters on PCA Scores",
+  xlab = "PC1",
+  ylab = "PC2"
+)
+legend(
+  "topright",
+  legend = paste("Cluster", sort(unique(km_fit$cluster))),
+  col = sort(unique(km_fit$cluster)),
+  pch = 19,
+  cex = 0.8
+)
+```
+To interpret the clusters, I compared each cluster's average log listening count for each artist. The table below lists the artists with the highest cluster averages, which gives a short description of what each cluster listens to most.
 
-hist(counts[counts > 0 & counts < 100],
-     breaks = 50,
-     main = "Zoomed Distribution",
-     xlab = "Count")
+```{r}
+music_log_mat <- as.matrix(unclass(music_log))
+
+music_log_df <- as.data.frame(music_log_mat, check.names = FALSE)
+
+colnames(music_log_df) <- make.unique(colnames(music_log_df))
+
+music_log_df$user_id <- rownames(music_log_mat)
+music_log_df$cluster <- factor(km_fit$cluster)
+
+cluster_profiles <- music_log_df |>
+  pivot_longer(
+    cols = -c(user_id, cluster),
+    names_to = "artist",
+    values_to = "log_count"
+  ) |>
+  group_by(cluster, artist) |>
+  summarise(avg_log_count = mean(log_count), .groups = "drop") |>
+  group_by(cluster) |>
+  slice_max(avg_log_count, n = 5, with_ties = FALSE) |>
+  arrange(cluster, desc(avg_log_count)) |>
+  mutate(avg_log_count = round(avg_log_count, 2))
+
+print(cluster_profiles)
+```
+These cluster profiles are more interpretable than the cluster labels by themselves. If one cluster has high averages for a coherent set of artists, that suggests a group of users with similar listening preferences. If several clusters share the same top artists, then the clustering may be separating users more by listening intensity than by genre or taste.
+
+### Hierarchical Clustering
+I also applied hierarchical clustering using complete linkage and Euclidean distance on the same scaled log-count data. Complete linkage tends to form more compact clusters than single linkage, which is useful here because I want groups of users that are reasonably close to all other users in the same cluster.
+
+```{r}
+user_dist <- dist(music_scaled)
+
+hc_complete <- hclust(user_dist, method = "complete")
+hc_clusters <- cutree(hc_complete, k = best_k)
+
+hc_sizes <- tibble(
+  cluster = names(table(hc_clusters)),
+  users = as.integer(table(hc_clusters))
+)
+
+print(hc_sizes)
 ```
 
 ```{r}
-artist_variance <- apply(music_matrix, 2, var)
+plot(
+  hc_complete,
+  labels = FALSE,
+  main = "Complete-Linkage Hierarchical Clustering",
+  xlab = "",
+  sub = ""
+)
 
-hist(artist_variance,
-     breaks = 30,
-     main = "Variance Across Artists",
-     xlab = "Variance")
+rect.hclust(hc_complete, k = best_k, border = 2:(best_k + 1))
+```
+The dendrogram shows how users merge into larger groups as the distance threshold increases. Cutting the tree at 2 clusters lets me compare hierarchical clustering with the k-means solution while still respecting the structure suggested by the dendrogram.
+
+### Comparing the Clustering Methods
+```{r}
+cluster_comparison <- table(
+  KMeans = km_fit$cluster,
+  Hierarchical = hc_clusters
+)
+
+print(cluster_comparison)
 ```
 
 ```{r}
-top_var_cols <- order(artist_variance, decreasing = TRUE)[1:12]
-
-cor_matrix <- cor(music_matrix[, top_var_cols],
-                  use = "pairwise.complete.obs")
-
-corrplot::corrplot(cor_matrix,
-                   method = "color",
-                   tl.cex = 0.7)
+plot(
+  pca_fit$x[, 1],
+  pca_fit$x[, 2],
+  col = hc_clusters,
+  pch = 19,
+  main = "Hierarchical Clusters on PCA Scores",
+  xlab = "PC1",
+  ylab = "PC2"
+)
+legend(
+  "topright",
+  legend = paste("Cluster", sort(unique(hc_clusters))),
+  col = sort(unique(hc_clusters)),
+  pch = 19,
+  cex = 0.8
+)
 ```
+K-means and hierarchical clustering answer similar questions in different ways. K-means directly optimizes compact clusters around centroids, while hierarchical clustering builds a tree of user similarity. Agreement between the two methods would suggest stable structure in the listening data. Disagreement would suggest that the data do not separate into sharply defined groups, or that different clustering algorithms are emphasizing different aspects of user behavior.
 
-## 5. Standardization
+## 5. Conclusion
 
-```{r}
-# remove zero-variance columns
-keep <- apply(music_matrix, 2, var) > 0
-music_matrix <- music_matrix[, keep]
+The CNN portion of the project shows how a pretrained ImageNet model can be used to classify personal animal photographs without training a new neural network. The model is most useful when its top predictions are interpreted as plausible visual categories rather than perfect labels.
 
-# convert to plain matrix (important for stability)
-music_matrix <- as.matrix(music_matrix)
+For the unsupervised learning portion, the LastFM data required preprocessing because the original matrix is sparse, high-dimensional, and right-skewed. I filtered to active users and popular artists, used a log transformation to reduce the effect of extreme play counts, and scaled the artist features before applying PCA and clustering. PCA provided a lower-dimensional view of the strongest patterns in listening behavior, while k-means and hierarchical clustering grouped users according to similarity in their artist listening profiles.
 
-# scale safely
-scaled_matrix <- scale(music_matrix)
-
-# remove any rows with NA/Inf after scaling
-scaled_matrix <- scaled_matrix[complete.cases(scaled_matrix), , drop = FALSE]
-
-# remove any remaining degenerate rows (all constant)
-scaled_matrix <- scaled_matrix[apply(scaled_matrix, 1, var) > 0, , drop = FALSE]
-```
-
-## 6. PCA
-
-```{r}
-pca_fit <- prcomp(scaled_matrix)
-
-pve <- (pca_fit$sdev^2) / sum(pca_fit$sdev^2)
-
-plot(pve,
-     type = "b",
-     xlab = "Principal Component",
-     ylab = "Proportion of Variance Explained",
-     main = "Scree Plot")
-
-scores <- pca_fit$x
-
-plot(scores[,1],
-     scores[,2],
-     xlab = "PC1",
-     ylab = "PC2",
-     main = "PCA Score Plot")
-```
-
-## 7. K-Means Clustering
-
-```{r}
-set.seed(1)
-
-# cap k so it can never exceed number of observations - 1
-max_k <- min(10, n - 1)
-
-wss <- numeric(max_k)
-
-for(k in 1:max_k){
-  km <- kmeans(scaled_matrix, centers = k, nstart = 20)
-  wss[k] <- km$tot.withinss
-}
-
-plot(1:max_k, wss,
-     type = "b",
-     xlab = "Number of Clusters",
-     ylab = "Within-Cluster Sum of Squares",
-     main = "Elbow Plot for K-Means Clustering")
-```
-
-```{r}
-km_fit <- kmeans(scaled_matrix, centers = 3, nstart = 50)
-
-table(km_fit$cluster)
-
-plot(scores[,1],
-     scores[,2],
-     col = km_fit$cluster,
-     pch = 19,
-     xlab = "PC1",
-     ylab = "PC2",
-     main = "K-Means Clusters on PCA Scores")
-```
-
-## 8. Hierarchical Clustering
-
-```{r}
-dist_matrix <- dist(scaled_matrix)
-
-hc_complete <- hclust(dist_matrix, method = "complete")
-
-plot(hc_complete, labels = FALSE)
-
-hc_clusters <- cutree(hc_complete, k = 3)
-
-table(hc_clusters)
-
-plot(scores[,1],
-     scores[,2],
-     col = hc_clusters,
-     pch = 19,
-     xlab = "PC1",
-     ylab = "PC2",
-     main = "Hierarchical Clusters on PCA Scores")
-```
-
-## Conclusion
-
-PCA and clustering reveal approximately three stable groups of users with consistent structure across methods.
-```
+Overall, the strongest conclusion is that repeat listening behavior contains some cluster structure, but the interpretation of those clusters depends on both the preprocessing choices and the clustering method. The most meaningful cluster descriptions come from examining the artists that define each group, not from the cluster numbers alone.
